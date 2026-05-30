@@ -1,0 +1,285 @@
+\section{实验}
+\subsection{实验设置与协议}
+
+主线实验在 HumanEval（164 题）与 MBPP sanitized（427 题）两条\textbf{标准函数级代码生成}基准上并行进行，用以检验\textbf{预算分档编排之统一实现}在\textbf{从单步到级联}路径上是否给出可复现、可解释的趋势：前者更贴近易饱和的短函数设定；后者提供更宽的改进空间与更可分辨的成本曲线。核心主结果模型统一为 \texttt{claude-sonnet-4-6}。预算划分为四档语义档位，并与表~\ref{tab:tier_mapping} 中的实现模式一一对应（\texttt{single\_step}、\texttt{single\_step\_repair}、\texttt{difficulty\_aware\_plus}、\texttt{workflow\_cascade}），保持「预算档位=策略形态」，避免模式组合带来的解释歧义\cite{chen2021evaluating,austin2021program}。第三档在双基准上共用 \texttt{difficulty\_aware\_plus} 实现；难度打分采用 v2 结构分。具体命令行写法见仓库复现说明。主表采用三 seed（42、78、132）均值$\pm$样本标准差；生成阶段存在非零温度，同配置重复仍可能出现个位数样本波动，因此正文结论以区间统计与前沿形态共同解读。
+
+\textbf{消融与主线的分工。}表~\ref{tab:main_results} 与表~\ref{tab:model_results_mbpp}、表~\ref{tab:model_results_he} 覆盖双基准、多模型的\textbf{端到端}结论；表~\ref{tab:ablation_06_threshold}--\ref{tab:ablation_08_flow} 的细粒度开关实验仅在 MBPP 上展开，用于解释\textbf{分流+重链与救援}档与\textbf{级联}档内部模块贡献与成本前沿。这样安排的首要原因是\textbf{评测动态范围}：在本文主模型设定下，HumanEval 通过率已接近饱和区间，细粒度消融更常表现为“个位数样本差异”，对模块贡献排序与阈值前沿的统计稳定性不足；MBPP 则保留更宽的改进空间，更适合承载机制解剖。其次才是 API 成本与可重复性。主结果已在 HumanEval 上验证同一编排的分档趋势，MBPP 消融进一步回答“趋势背后的机制与预算花在哪里”。
+
+除非特别说明，MBPP 结果采用 \texttt{MBPP sanitized} 的 427 题口径，HumanEval 结果采用 164 题口径；主结果表（表~\ref{tab:main_results}）中的各方法共享同一执行脚本与同一统计方式。凡涉及外部论文结果的横向对照，均单独标注并仅作背景映衬，不参与主结论的严格同条件比较。
+
+评价指标除了通过率之外，还同时记录平均调用次数和总 token 数。本文特别强调后两者，是因为在真实 API 场景中，调用次数并不能完整代表成本。一次很长的失败分析提示，可能比两次短调用更昂贵；而多阶段系统真正难以控制的，往往恰恰是上下文累积带来的 token 膨胀。因此，凡是涉及“方法更划算”或“预算更有效”的判断，都必须结合 token 视角来理解。就评价思想而言，这种写法与近年来关于代码生成测试时扩展的讨论是一致的，即不只比较最终正确率，也比较为获得这部分正确率所付出的额外计算\cite{li2022alphacode,li2025sstar}。
+
+为避免“复杂流程天然占优”的偏差，本文将公平基线限定为同轮次或同预算可比形式：其一是固定采样次数的简单重试/\texttt{pass@k} 基线（即在相同候选规模下比较选择机制）\cite{chen2021evaluating}；其二是固定总 token 开销的 best-of-$N$ 基线（在相近计算预算下比较流程收益）\cite{li2025sstar}。此外，主结果采用同模型、同数据切分、同执行器与同统计口径的设置；\textbf{主表}（表~\ref{tab:main_results}）为三 seed 区间统计，多模型分档表与多数 MBPP 消融表为\textbf{单次 seed=42} 的形态扫描，二者证据权重不同（见表~\ref{tab:protocol_constraints}）。
+
+\begin{table*}[htbp]
+\centering
+\small
+\caption{实验协议约束（fairness constraints）}
+\label{tab:protocol_constraints}
+\begin{tabularx}{\textwidth}{p{2.8cm} X}
+\toprule
+约束项 & 本文约束 \\
+\midrule
+数据口径 & MBPP sanitized 427 + HumanEval 164 \\
+模型与版本 & 主结果统一 \texttt{claude-sonnet-4-6}；多模型结果单独列出 \\
+随机性控制 & 主表 MBPP+HumanEval 四档三 seed 统计，42、78、132；E2 反馈形态对照补充五 seed，42、78、132、256、512；multiset 随机路由对照为 seed=42 单次（structural 与 \texttt{random\_permute\_matched} 各一次） \\
+执行与判定 & 统一执行器、超时、测试调用方式与通过判定口径 \\
+比较轴线 & 主结论以同协议内\textbf{预算分档编排}双基准主结果（表~\ref{tab:main_results}，三 seed）为准；多模型分档表为 seed=42 单次形态扫描；细粒度消融（除 E2 五 seed 外）多为 seed=42 单次 \\
+轮次公平 & 报告固定候选规模（\texttt{pass@k}/simple retry）对比 \\
+预算公平 & 报告固定总 token（best-of-$N$）对比 \\
+成本指标 & 同时报告通过率、平均调用次数、总 token，避免单指标偏置 \\
+\bottomrule
+\end{tabularx}
+\end{table*}
+
+公平基线按「可直接复现 + 外部可对照」两层组织：外部方法优先选取 Self-Repair 相关且文献成熟的路线（如 Self-Debug、Reflexion、CodeT）用于量级参考；同协议主对比仅使用仓库内可复现实现，避免跨论文协议不一致导致的假比较。
+
+\subsection{主结果}
+
+本节按「主结果 $\rightarrow$ 多模型对照 $\rightarrow$ 机制验证 $\rightarrow$ 成本前沿」组织：先给出双基准端到端趋势，再检验同一分档结构在不同基础模型上的形态稳定性，最后通过 MBPP 控制消融、\textbf{双基准 multiset 随机路由}对照与 $\rho$ 指标给出可部署的预算前沿证据。
+
+表~\ref{tab:main_results} 给出预算分档编排在 HumanEval 与 MBPP 上的端到端表现（主模型为 \texttt{claude-sonnet-4-6}）。表中策略列以档位语义名为准，括号内仅给出与实现模式相关的关键标识（如默认级联基线、$\tau$ 等），便于读者对照第\ref{sec:overview-flow}节描述；完整复现命令见仓库说明。
+
+\begin{table*}[htbp]
+\centering
+\small
+\caption{预算分档编排主结果（统一实现；模型：\texttt{claude-sonnet-4-6}；MBPP+HumanEval）}
+\label{tab:main_results}
+\begin{tabularx}{\textwidth}{@{}p{2.2cm} >{\raggedright\arraybackslash}X c c c c@{}}
+\toprule
+数据集 & 策略 & 通过率(\%) & 平均调用次数 & 总 token & 边际$\rho$ \\
+\midrule
+MBPP & 单步（\texttt{single\_step}） & $82.51\pm0.48$ & $1.000\pm0.000$ & $113{,}922\pm5{,}621$ & --- \\
+MBPP & 单步+修补（\texttt{single\_step\_repair}） & $86.65\pm0.24$ & $1.177\pm0.001$ & $141{,}207\pm4{,}393$ & 1.52 \\
+MBPP & 分流+重链与救援（\texttt{difficulty\_aware\_plus}） & $88.52\pm0.24$ & $1.483\pm0.009$ & $218{,}327\pm2{,}138$ & 0.24 \\
+MBPP & 级联（\texttt{workflow\_cascade}） & $91.72\pm0.36$ & $1.639\pm0.021$ & $321{,}177\pm11{,}854$ & 0.31 \\
+\midrule
+HumanEval & 单步（\texttt{single\_step}） & $97.56\pm0.00$ & $1.000\pm0.000$ & $64{,}938\pm116$ & --- \\
+HumanEval & 单步+修补（\texttt{single\_step\_repair}） & $99.19\pm0.35$ & $1.020\pm0.003$ & $66{,}925\pm1{,}588$ & 8.19 \\
+HumanEval & 分流+重链与救援（\texttt{difficulty\_aware\_plus}，v2，$\tau$=1.6） & $99.39\pm0.00$ & $1.067\pm0.010$ & $75{,}151\pm1{,}064$ & 0.25 \\
+HumanEval & 级联（\texttt{workflow\_cascade}，默认基线） & $99.80\pm0.35$ & $1.055\pm0.010$ & $73{,}847\pm1{,}422$ & --- \\
+\bottomrule
+\end{tabularx}
+
+\vspace{0.5ex}
+{\footnotesize\textbf{注：}MBPP 与 HumanEval 各档均为三 seed（42/78/132）均值$\pm$样本标准差。边际 $\rho$ 为相对\textbf{上一档}，$\rho=\Delta p_{\mathrm{(\%)}}\,/\,(\Delta t_{\mathrm{tok}}/10^4)$，单位：百分点/万 token；当相邻两档总 token 不增（$\Delta t\le 0$）时边际 $\rho$ 无定义，表中记为“---”。表~\ref{tab:rho_frontier} 的 $\rho_b^{(\mathrm{cum})}$ 为相对\textbf{单步档}累计，分母恒为单步至该档 token 增量，可与边际 $\rho$ 同时阅读。}
+\end{table*}
+
+HumanEval 上，\texttt{claude-sonnet-4-6} 在单步档已接近高位，三 seed 下分档增益主要体现为残差段收束：从单步到单步+修补即可获得主要增益，后续档位更多体现为上限逼近与成本重分配。该趋势说明在易饱和基准上应联合阅读通过率区间与 token 前沿，而不宜只看单次百分点差。
+
+MBPP 上，同一套分档呈现更宽的动态区间：从单步到级联，通过率与 token 同步抬升的趋势更显著。这与题面更长、失败形态更混杂的分布相一致，也更适合作为观察「预算投向是否划算」的主场景。两相对照，可把本文贡献读作：统一实现下的分档编排并不总是表现为「任何基准都巨幅涨分」，而常表现为在更难、更杂的分布上提供可扩展收益，同时在易饱和的分布上仍保持合理的成本曲线与残差提升。
+
+针对 MBPP，四档均已补齐三 seed 统计并回填主表：从单步到单步+修补的边际 $\rho$ 最高，后续档位边际 $\rho$ 递减但累计通过率继续抬升，呈现“先以中档建立高性价比增益、再以高档追求上限”的前沿关系。另在机制层面，E2 反馈形态对照已补充五 seed，见表~\ref{tab:e2_feedback_format_5seed}，用于独立检验失败回注形式本身是否改变结论。
+
+\subsubsection{多模型对照}
+
+表~\ref{tab:model_results_mbpp} 与表~\ref{tab:model_results_he} 进一步报告多组模型的分档通过率，用于检验同一协议下档位形态是否随基础模型发生系统性漂移。
+
+\begin{table*}[htbp]
+\centering
+\caption{不同模型在 MBPP 上的预算分档结果（通过率\%；列为第\ref{sec:overview-flow}节四档语义；\textbf{seed=42 单次}，与主表三 seed 均值非同一统计量）}
+\label{tab:model_results_mbpp}
+\begin{tabular}{lcccc}
+\toprule
+模型 & 单步 & 单步+修补 & 分流+重链与救援 & 级联 \\
+\midrule
+claude-sonnet-4-6 & 82.51 & 86.65 & 88.52 & 91.72 \\
+gpt-5.4 & 72.13 & 77.75 & 79.39 & 85.48 \\
+gpt-5.3-codex & 71.90 & 78.92 & 79.39 & 83.84 \\
+qwen3-coder-plus & 71.90 & 76.58 & 79.63 & 81.97 \\
+qwen3-30b-a3b-instruct-2507 & 68.38 & 75.18 & 77.99 & 80.80 \\
+gemini-3.1-flash-lite-preview & 73.54 & 76.81 & 79.39 & 80.09 \\
+qwen-plus & 70.73 & 75.18 & 77.28 & 79.63 \\
+\bottomrule
+\end{tabular}
+\end{table*}
+
+\begin{table*}[htbp]
+\centering
+\caption{不同模型在 HumanEval 上的预算分档结果（通过率\%；列为第\ref{sec:overview-flow}节四档语义；\textbf{seed=42 单次}）}
+\label{tab:model_results_he}
+\begin{tabular}{lcccc}
+\toprule
+模型 & 单步 & 单步+修补 & 分流+重链与救援 & 级联 \\
+\midrule
+claude-sonnet-4-6 & 97.56 & 99.19 & 99.39 & 99.80 \\
+gemini-3.1-flash-lite-preview & 97.56 & \textbf{98.78} & \textbf{99.39} & 98.78 \\
+gpt-5.3-codex & 95.12 & 97.56 & 98.78 & 99.39 \\
+gpt-5.4 & 95.12 & 97.56 & 97.56 & 98.78 \\
+qwen3-coder-plus & 95.73 & 97.56 & 98.78 & 98.17 \\
+qwen3-30b-a3b-instruct-2507 & 92.68 & 95.73 & 97.56 & 96.34 \\
+qwen-plus & 92.68 & 97.50 & 96.34 & 95.12 \\
+\bottomrule
+\end{tabular}
+\end{table*}
+
+总体而言，多数模型仍呈现「单步 $\rightarrow$ 单步+修补 $\rightarrow$ 分流+重链与救援 $\rightarrow$ 级联」逐级抬升的粗形态，但绝对分数与性价比因模型能力差异较大：强模型在中档即可获得较大部分收益，较弱模型则更依赖高档候选扩展。跨表比较时，建议以「是否越过同一类失败瓶颈」作为对齐轴，而不是仅比较不同模型在同档的终值分数；同时注意上表为单次 seed 的形态扫描，不宜与主表三 seed 区间做“谁高谁低”的硬比较。
+
+\subsection{机制验证}
+\label{sec:mechverify}
+
+本节同时报告控制基线与模块消融：\textbf{阈值与流程级消融}仍以 MBPP 427 题为主（易饱和 HumanEval 上细粒度开关更易表现为个位数波动）；\textbf{multiset 随机路由}对照则在 HumanEval 164 与 MBPP 427 上\textbf{各做一次}配对运行（\texttt{claude-sonnet-4-6}，分流+重链与救援档 $b{=}0.6$，\textbf{seed=42}），以便与 LR 离线证据并列阅读。除表~\ref{tab:e2_feedback_format_5seed} 与表~\ref{tab:route_random_multiset} 的说明外，其余 MBPP 消融表多为\textbf{seed=42 单次}；与主表三 seed 结论并列时应区分“有区间统计的档位趋势”与“单次机制解剖”。
+
+\subsubsection{学习式路由控制基线}
+
+为回应“结构难度分能否替代规则分流、或能否直接预测运行失败”的问题，本文在与打分表对齐的 task 级样本上给出逻辑回归 5-fold 交叉验证对照（特征含五维子分与体量项等）。结果显示：\texttt{direct\_fail} 与 \texttt{need\_reroute} 的 ROC-AUC 分别约为 0.471 与 0.473，接近随机分类器；加入扩展静态特征后 AUC 约升至 0.51，增量有限。
+
+\textbf{正确解读。}上述结果只能说明：在当前标签口径与任务规模下，\textbf{用静态表特征去拟合“是否首轮失败/是否需要改道”这类运行标签}的判别能力弱。它\textbf{既不蕴含}“规则分流优于任意随机路由”，也\textbf{不蕴含}“规则分流优于任意学习式路由器”。其中，``规则 vs 随机''需要\textbf{协议内、可复现}的在线对照；本文在表~\ref{tab:route_random_multiset} 给出一种明确对照：\textbf{在固定 easy/hard multiset（与同批 structural 相同的 hard 覆盖率）下随机置换题—槽位对应}，再与 structural 同跑整卷。该对照仍\textbf{不覆盖}其它随机化形式（例如 Bernoulli($p$) 独立抽样导致 hard 计数方差等），故讨论中避免将结论外推为“一切随机分流均劣于结构分流”。本文将规则分流定位为\textbf{可解释、可阈值化的预算分配先验}：其有效性由端到端通过率与 token 前沿及 $\tau$ 消融共同支持，边界由 LR 证据说明“不要把同一组静态分误读为失败预测器”，并由表~\ref{tab:route_random_multiset} 说明“在固定覆盖率 multiset 下，结构对齐可带来可观测差异（且常伴随更高 token）”。
+
+\subsubsection{Multiset 随机路由整卷对照}
+
+表~\ref{tab:route_random_multiset} 报告 \texttt{difficulty\_aware\_plus} 档在 $b{=}0.6$、$\tau{=}1.6$ 下的配对结果：\textbf{structural} 为默认结构分流；\textbf{random\_permute\_matched} 为第~\ref{sec:routing} 节所述 multiset 置换对照。两列在各自数据集上 \texttt{easy\_tasks}/\texttt{hard\_tasks} 完全一致（MBPP：180 easy / 247 hard；HumanEval：12 easy / 152 hard），因而比较的是\textbf{同一 hard 预算槽位 multiset}在不同\textbf{题—槽位对齐方式}下的端到端差异。
+
+\begin{table*}[htbp]
+\centering
+\small
+\caption{Multiset 随机路由整卷对照（\texttt{difficulty\_aware\_plus}，$b{=}0.6$，\texttt{claude-sonnet-4-6}，\textbf{seed=42 单次}。random 列为 \texttt{random\_permute\_matched}。}
+\label{tab:route_random_multiset}
+\begin{tabularx}{\textwidth}{@{}p{2.4cm} >{\raggedright\arraybackslash}p{3.6cm} >{\raggedright\arraybackslash}p{3.6cm} c c@{}}
+\toprule
+数据集 & structural（通过/总） & random multiset（通过/总） & structural 总 token & random 总 token \\
+\midrule
+MBPP 427 & 383/427（89.70\%） & 379/427（88.76\%） & 267{,}878 & 234{,}912 \\
+HumanEval 164 & 163/164（99.39\%） & 163/164（99.39\%） & 77{,}683 & 76{,}563 \\
+\bottomrule
+\end{tabularx}
+
+\vspace{0.5ex}
+{\footnotesize\textbf{注：}同表汇总平均调用次数：MBPP 为 structural $677$ 次 vs random $640$ 次；HumanEval 为 $178$ vs $177$ 次。跑分落盘文件名含时间戳 \texttt{20260512}，命令行含 \texttt{--difficulty\_assignment structural} 或 \texttt{random\_permute\_matched}。}
+\end{table*}
+
+在\textbf{本次单次配对}下，MBPP 上 structural 较 multiset 随机置换\textbf{多对 4 题}，但总 token 与总调用更高，呈现典型的\textbf{精度--成本交换}；HumanEval 上通过率\textbf{同为} 163/164，随机置换略省 token（差异量级较小，宜结合易饱和区间解读为“对齐效应不显著或噪声主导”）。因此表~\ref{tab:route_random_multiset} 应作为\textbf{对 LR 证据的补充}：LR 说明静态分不是好的\textbf{失败分类器}；本对照则说明在\textbf{固定 hard 覆盖率 multiset} 的前提下，\textbf{结构—槽位对齐}在更难、更杂的分布上仍可带来非零通过率差，但通常不是“免费午餐”。
+
+\subsubsection{反馈回注形态对照}
+
+为给出失败反馈压缩的独立因果证据，本文在相同模型、预算、任务规模与路由配置下，仅替换 repair 阶段的错误回注形态：\texttt{compressed}，默认压缩反馈，与 \texttt{raw\_traceback}，完整 traceback。对照采用五 seed，42、78、132、256、512，并保持任务打乱开启，以减少单次偶然样本影响。结果见表~\ref{tab:e2_feedback_format_5seed}。
+
+\begin{table*}[htbp]
+\centering
+\caption{E2 反馈形态对照（MBPP 427，\texttt{difficulty\_aware\_plus}，$b=0.6$；五 seed，均值$\pm$样本标准差）}
+\label{tab:e2_feedback_format_5seed}
+\begin{tabularx}{\textwidth}{p{3.2cm} c c c X}
+\toprule
+回注形态 & passed & pass@1(\%) & 总 token & 结论 \\
+\midrule
+\texttt{compressed} & $379.4\pm3.85$ & $88.852\pm0.900$ & $229{,}713\pm7{,}558$ & 均值 token 更低；与对照组通过率差小于各自标准差量级 \\
+\texttt{raw\_traceback} & $379.0\pm1.41$ & $88.756\pm0.334$ & $233{,}180\pm2{,}781$ & 均值 token 更高；未做 formal 显著性检验 \\
+\bottomrule
+\end{tabularx}
+\end{table*}
+
+五 seed 平均上，\texttt{compressed} 相对 \texttt{raw\_traceback} 的通过率差异仅为 $+0.096$ 个百分点（约 0--1 题量级），且两组 passed 与 pass@1 的样本标准差带相互重叠；总 token 均值差约 $3{,}467$，同样未报告 formal 显著性检验。因此本文\textbf{不主张}“compressed 在统计意义上严格更准”，而将其表述为：在观测到的均值意义上两者精度几乎无差，compressed 在成本侧更稳；部署上可把 compressed 作为\textbf{上下文更短}的回注默认，并保留按任务分布做小规模回归切换的权利。
+
+\subsubsection{分流+重链与救援档：难度阈值\texorpdfstring{$\tau$}{tau}}
+
+表~\ref{tab:ablation_06_threshold} 在固定其余流程的前提下扫描 $\tau$，观察 easy/hard 占比、pass@1 与 token 的联动关系。
+
+\begin{table*}[htbp]
+\centering
+\caption{分流+重链与救援档阈值消融（MBPP 427；v2 打分器，第三档其余配置固定；\textbf{seed=42 单次}）}
+\label{tab:ablation_06_threshold}
+\begin{tabularx}{\textwidth}{p{2.0cm} p{2.2cm} c c c X}
+\toprule
+阈值 $\tau$ & easy/hard & pass@1 & 平均调用 & 总 token & 结论 \\
+\midrule
+$\tau$=1.0 & 92 / 335 & \textbf{382/427} & 1.646 & 255,523 & 精度最高，但成本明显更高 \\
+$\tau$=1.1 & 127 / 300 & 381/427 & 1.597 & 243,529 & 轻微降分，成本下降 \\
+$\tau$=1.4 & 187 / 240 & 380/427 & 1.511 & 220,825 & 进入更平衡区间 \\
+$\tau$=1.6 & 213 / 214 & 381/427 & 1.489 & 217,510 & 默认点，精度/成本折中 \\
+$\tau$=1.7 & 224 / 203 & 379/427 & 1.476 & 217,534 & 再提高阈值出现降分 \\
+$\tau$=1.8 & 254 / 173 & 376/427 & \textbf{1.447} & \textbf{205,909} & 成本最低，但精度损失明显 \\
+\bottomrule
+\end{tabularx}
+\end{table*}
+
+从表~\ref{tab:ablation_06_threshold} 可见，$\tau$ 实质上控制 hard 覆盖率，从而在精度与成本之间形成连续可调的前沿：较低阈值提高上限但更耗 token；较高阈值压缩成本但可能损伤精度。默认点 $\tau=1.6$ 位于折中区间，后文流程消融均在该点展开。
+
+\subsubsection{分流+重链与救援档：流程开关}
+
+表~\ref{tab:ablation_06_flow} 在 $\tau=1.6$ 的默认点处，对 spec、cot 以及两级救援（候选救援与 refine 救援）等进行开关式对比，用以识别主贡献模块与边际模块。
+
+\begin{table*}[htbp]
+\centering
+\caption{分流+重链与救援档流程消融（MBPP 427；阈值固定 $\tau$=1.6，v2 打分器；\textbf{seed=42 单次}）}
+\label{tab:ablation_06_flow}
+\begin{tabularx}{\textwidth}{p{3.7cm} c c c X}
+\toprule
+配置 & pass@1 & 平均调用 & 总 token & 结论 \\
+\midrule
+完整流程（all-on） & \textbf{381/427} & 1.489 & 217,510 & 作为分流+重链与救援档基线 \\
+\texttt{-hard\_spec} & 360/427 & \textbf{1.164} & \textbf{148,549} & spec 为主贡献模块，关闭后精度显著下降 \\
+\texttt{-hard\_cot} & 375/427 & 1.436 & 202,847 & cot 提供中等增益，成本可控 \\
+\texttt{-plus\_candidate\_rescue} & 377/427 & 1.283 & 167,780 & 候选救援有增益，且是主要额外成本来源 \\
+\texttt{-plus\_refine\_rescue} & 378/427 & 1.450 & 207,200 & refine 层贡献较小、边际收益有限 \\
+\bottomrule
+\end{tabularx}
+\end{table*}
+
+表~\ref{tab:ablation_06_flow} 的主次结构相对清晰：\texttt{hard\_spec} 对主链下限影响最大；\texttt{hard\_cot} 与候选救援提供次级增益，其中候选救援同时带来较明显的 token 上升；refine 救援的边际收益相对有限。该排序与「先把搜索空间收窄，再考虑扩展推理与候选」的直觉一致。
+
+\subsubsection{级联档：组织方式与扩展强度}
+
+表~\ref{tab:ablation_08_flow} 聚焦级联档内部的关键开关。本文主配置为固定默认级联基线，因此消融只比较在该基线上对 extra 与 refine 相关模块的开关，用以解释高预算下性能上界主要由哪些环节支撑。
+
+\begin{table*}[htbp]
+\centering
+\caption{级联档流程消融（cascade，MBPP 427；\textbf{seed=42 单次}）}
+\label{tab:ablation_08_flow}
+\begin{tabularx}{\textwidth}{p{3.8cm} c c c X}
+\toprule
+配置 & pass@1 & 平均调用 & 总 token & 结论 \\
+\midrule
+主配置（默认级联基线） & \textbf{392/427} & 1.595 & 299,935 & 级联档默认基线 \\
+\texttt{-extra} & 355/427 & \textbf{1.000} & \textbf{108,610} & 精度大幅下降，extra 为核心增益模块 \\
+\texttt{-refine\_once} & 387/427 & 1.529 & 280,307 & 轻微降分，显著省 token \\
+\texttt{+semantic\_refine\_gate} & 390/427 & 1.541 & 280,784 & 折中方案：接近最优精度且成本更低 \\
+\bottomrule
+\end{tabularx}
+\end{table*}
+
+表~\ref{tab:ablation_08_flow} 表明，\texttt{extra} 所对应的候选扩展几乎是高预算性能的必要条件；一旦移除，系统迅速退化为接近单轮调用的成本结构，但通过率亦随之断崖式下降。另一方面，在默认级联基线上，refine 相关开关体现的是\textbf{精度--成本微调}而非主增益来源：关闭一次 refine 可显著节省 token，但会带来轻微降分；语义门控版本则提供折中点。需要注意，诸如“390/427 vs 392/427”这类约 2 题（同量级地，个位数题差）应按随机波动区间解读，不宜单独上升为稳定优势结论。该观察与「高预算的关键在候选扩展，次要收益来自后处理组织」一致。更一般地，这一负面结果说明“阶段更多”并不自动带来收益：当主链路已经由候选扩展覆盖主要增益后，附加后处理步骤可能只提供边际修饰，甚至在预算受限时挤占关键调用配额。
+
+\subsubsection{证据边界与主结论的对应关系}
+
+本文关注的是 API 成本约束下的可落地编排协议：在同等资源约束下如何组织已有能力，使通过率增益与成本增量保持可解释对应关系。
+
+关于证据权重：分档有效性、跨模型形态与双基准趋势，应以表~\ref{tab:main_results} 的\textbf{三 seed 区间}为主证据；多模型分档表用于\textbf{单次 seed} 下的形态扫描，不宜与主表做硬数值对齐。模块主次与阈值--成本前沿，以 MBPP 上的表~\ref{tab:ablation_06_threshold}--\ref{tab:ablation_08_flow} 为机制材料（多为单次 seed）。\textbf{Multiset 随机路由}对照（表~\ref{tab:route_random_multiset}）为双基准、单次 seed 的配对整卷结果，用于补充 LR 叙述而非替代主表区间统计。
+
+\subsection{成本--收益前沿分析}
+\label{sec:cost_rho}
+
+综合主结果与消融，可将本文系统在代码生成中的行为概括为三条可复述的观察。(1) 双基准主结果表明，从单步到级联带来的主要增量在 MBPP 上更显著，在 HumanEval 上更多体现为残差段的稳健收尾。(2) 分流+重链与救援档的阈值与流程消融表明，预算首先应花在能把搜索空间收窄的模块上（如 spec 主链），其次才是可选的推理加深与候选救援。(3) 级联档消融表明，高预算的核心不是堆叠更多阶段名称，而是候选扩展（\texttt{extra}）；在默认级联基线上，refine 相关模块主要承担精度与 token 的细粒度折中。
+
+从工程部署角度看，可形成两级策略：在分流+重链与救援档优先通过阈值调节获得成本可控的稳定增益（推荐保留 \texttt{hard\_spec}，并按预算决定 cot 与救援层深度）；在级联档将 \texttt{extra} 作为不可删除模块，并在默认级联基线下按需调节 refine 强度。相较「无差别增加调用次数」，这种中预算做分流与修补、高预算做候选扩展的结构更接近可落地的 API 部署逻辑。部署前仍建议在 HumanEval 与 MBPP 两类分布上做小规模回归，以避免只优化其中一种失败形态。
+
+最后，引入一个仅用于事后解释、而不用于训练或路由的标量。设某策略相对其前一档带来的通过率增量为 $\Delta p$，额外 token 开销为 $\Delta t$，定义经验性收益率
+\begin{equation}
+\rho=\frac{\Delta p}{\Delta t}.
+\end{equation}
+为便于横向比较，本文进一步报告“相对单步档”的累计收益率
+\begin{equation}
+\rho_b^{(\mathrm{cum})}=\frac{p_b-p_{\mathrm{single}}}{t_b-t_{\mathrm{single}}},
+\end{equation}
+并以“每万 token 带来的通过率提升百分点”呈现。表~\ref{tab:rho_frontier} 给出主结果中的对应数值。
+
+\begin{table*}[htbp]
+\centering
+\small
+\caption{预算分档的经验收益率前沿（相对单步档累计；单位：每万 token 提升百分点；数值与表~\ref{tab:main_results} 三 seed 均值对齐）}
+\label{tab:rho_frontier}
+\begin{tabularx}{\textwidth}{p{1.9cm} p{3.0cm} c c c}
+\toprule
+数据集 & 档位 & $\Delta p$（百分点） & $\Delta t$（token） & $\rho_b^{(\mathrm{cum})}\times 10^4$ \\
+\midrule
+MBPP & 单步+修补（\texttt{single\_step\_repair}） & 4.14 & 27,284 & 1.52 \\
+MBPP & 分流+重链与救援（\texttt{difficulty\_aware\_plus}） & 6.01 & 104,405 & 0.58 \\
+MBPP & 级联（\texttt{workflow\_cascade}） & 9.21 & 207,255 & 0.44 \\
+\midrule
+HumanEval & 单步+修补 & 1.63 & 1,986 & 8.19 \\
+HumanEval & 分流+重链与救援 & 1.83 & 10,213 & 1.79 \\
+HumanEval & 级联 & 2.24 & 8,909 & 2.51 \\
+\bottomrule
+\end{tabularx}
+\end{table*}
+
+当 $\rho$ 较高时，通常意味着新增 token 换来了更显著的正确率提升；当 $\rho$ 明显下降时，则提示系统可能进入「继续加预算但收益变缓」的区间。结合表~\ref{tab:main_results}，HumanEval 更容易出现 $\Delta p$ 较小但仍具工程意义的残差段；MBPP 则更常出现 $\Delta p$ 与 $\Delta t$ 同步变化、需要比较前沿的情形。由此，级联档更自然地扮演高预算探索上界，而分流+重链与救援档更自然地扮演中预算折中方案：二者在不同基准上的可感知幅度可能不同，但角色分工一致。

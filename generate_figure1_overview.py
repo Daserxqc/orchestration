@@ -8,8 +8,9 @@ from PIL import Image, ImageDraw, ImageFilter, ImageFont
 
 
 ROOT = Path(__file__).resolve().parent
-PNG_PATH = ROOT / "figure1_overview.png"
-SVG_PATH = ROOT / "figure1_overview.svg"
+FIGURES_DIR = ROOT / "figures"
+PNG_PATH = FIGURES_DIR / "figure1_overview.png"
+SVG_PATH = FIGURES_DIR / "figure1_overview.svg"
 
 WIDTH = 1980
 HEIGHT = 680

@@ -1,0 +1,7 @@
+\section{相关研究}
+
+围绕代码生成的测试时增强，现有研究可归为三条与本文直接相关的线索。第一条是\textbf{评测与口径}：HumanEval 与 MBPP 构成函数级代码生成的主评测基线\cite{chen2021evaluating,austin2021program}，APPS、CodeXGLUE、DS-1000、EvalPlus、LiveCodeBench 等扩展了任务分布与测试覆盖\cite{hendrycks2021apps,lu2021codexglue,lai2023ds1000,liu2023evalplus,jain2024livecodebench}。第二条是\textbf{执行反馈驱动修补}：Self-Debug、Reflexion、CRITIC、Self-Refine、AgentCoder、CodeT 等工作显示，反馈是否被压缩为可执行约束，直接影响修补收益上限\cite{chen2024selfdebug,shinn2023reflexion,gou2024critic,madaan2023selfrefine,huang2024agentcoder,chen2023codet}。第三条是\textbf{测试时计算分配}：AlphaCode 及后续 test-time scaling 路线证明，候选扩展与筛选可以提升通过率，但代价是显著的 token 与调用增长\cite{li2022alphacode,li2025sstar}。
+
+上述工作分别回答“在哪评测”“如何修补”“如何扩展计算”，但对工程部署仍有一个共同空白：当系统同时启用分流、修补与级联时，如何在\textbf{同一实现}中保证可比性，避免由模板差异、默认开关与采样口径造成的伪增益。本文据此将问题重心从“新增单模块”转为“统一协议下的预算分配”，即在统一执行器、统一统计与统一入口下，比较不同预算形态的真实边际收益。
+
+因此，本文在相关工作中的定位是\textbf{可部署协议研究}而非单点技巧改进：主文关注成本--收益前沿，机制层关注可复现实证，最终目标是把预算决策映射为可量化的 token 代价与可执行部署建议。

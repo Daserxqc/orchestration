@@ -1,0 +1,22 @@
+\begin{abstract}
+在 API 计费与上下文长度约束下，函数级代码生成的部署效果取决于测试时计算如何组织，而非单次生成本身。本文将问题表述为可复现的\textbf{预算分档编排协议}：在单一实现与统一统计口径下，把从单步到级联的行为固定为四个可对照档位，使不同预算形态可在同一执行器与同一评测口径下比较。
+
+主实验在 HumanEval 与 MBPP 两条函数级基准上联合报告通过率、调用次数与总 token，并给出经验收益率 $\rho$ 刻画各档边际与累计成本--收益关系。结果表明：在更难、更杂的任务分布上，分档编排带来更宽的通过率提升空间；在易饱和分布上，增益更多体现为残差段收束与成本重分配。机制上，静态结构难度分更适合作为\textbf{预算分配先验}而非运行失败分类器；multiset 随机路由对照用于分离 hard 覆盖率与结构对齐的贡献；反馈回注形态对照表明，压缩回注在精度几乎不变的前提下可显著降低 token 开销。
+
+部署上，中预算侧重结构化主链与失败回注修补，高预算侧重候选扩展并在可选 refine 上做精度与 token 的折中。
+\keywords{函数级代码生成；测试时计算；预算分档；失败修补；级联编排}
+\end{abstract}
+
+\begingroup
+\renewcommand{\abstractname}{Abstract}
+\renewcommand{\abstracttextfont}{\small\normalfont\noindent\ignorespaces}
+\begin{abstract}
+Under API pricing and context-length constraints, the deployment effectiveness of function-level code generation depends on how test-time computation is organized, rather than on a single generation attempt alone. This paper formulates the problem as a reproducible \textbf{budget-tiered orchestration protocol}: under one implementation and one unified accounting interface, behaviors from single-step generation to cascaded workflows are fixed into four comparable tiers, so that different budget forms can be compared under the same executor and evaluation protocol.
+
+The main experiments jointly report pass rate, number of calls, and total tokens on the HumanEval and MBPP function-level benchmarks, and introduce an empirical gain rate $\rho$ to characterize both marginal and cumulative cost--benefit relationships across tiers. Results show that tiered orchestration provides broader room for pass-rate improvement on harder and more heterogeneous task distributions; on easier and more saturated distributions, the gains are more reflected in residual-set convergence and cost reallocation. Mechanistically, static structural difficulty scores are more suitable as \textbf{budget-allocation priors} than as runtime failure classifiers; the multiset random-routing control separates the contribution of hard-slot coverage from structural alignment; and the feedback-injection comparison shows that compressed feedback can substantially reduce token cost while keeping accuracy nearly unchanged.
+
+For deployment, the medium-budget setting emphasizes a structured main chain and failure-feedback repair, whereas the high-budget setting emphasizes candidate expansion and trades off accuracy against token cost through optional refine steps.
+
+\par\vskip2ex\noindent\normalfont{\bfseries Keywords: } function-level code generation; test-time computation; budget tiering; failure repair; cascade orchestration
+\end{abstract}
+\endgroup

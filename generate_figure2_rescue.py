@@ -7,8 +7,9 @@ from PIL import Image, ImageDraw, ImageFilter, ImageFont
 
 
 ROOT = Path(__file__).resolve().parent
-PNG_PATH = ROOT / "figure2_rescue_loop.png"
-SVG_PATH = ROOT / "figure2_rescue_loop.svg"
+FIGURES_DIR = ROOT / "figures"
+PNG_PATH = FIGURES_DIR / "figure2_rescue_loop.png"
+SVG_PATH = FIGURES_DIR / "figure2_rescue_loop.svg"
 
 WIDTH = 1380
 HEIGHT = 620
