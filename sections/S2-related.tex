@@ -3,18 +3,18 @@
 
 \subsection{函数级代码生成评测}
 
-函数级代码生成通常以题面、函数签名和单元测试评测模型能否生成可执行程序。HumanEval\cite{chen2021evaluating} 与 MBPP\cite{austin2021program} 是该方向最常用的基准，前者规模较小、题面相对集中，后者覆盖更广的 Python 任务。随后，APPS、CodeXGLUE、DS-1000、EvalPlus 与 LiveCodeBench 等工作进一步扩展了任务难度、领域范围和测试覆盖\cite{hendrycks2021apps,lu2021codexglue,lai2023ds1000,liu2023evalplus,jain2024livecodebench}。
+函数级代码生成通常以题面、函数签名和单元测试评测模型能否生成可执行程序。HumanEval\cite{chen2021evaluating} 与 MBPP\cite{austin2021program} 是该方向最常用的基准，前者规模较小、题面相对集中，后者覆盖更广的 Python 任务。随后，APPS\cite{hendrycks2021apps} 与 CodeXGLUE\cite{lu2021codexglue} 扩展了竞赛题和多任务代码评测范围，DS-1000\cite{lai2023ds1000} 与 EvalPlus\cite{liu2023evalplus} 分别强化了数据科学代码和测试充分性评测，LiveCodeBench\cite{jain2024livecodebench} 进一步强调时间切分和污染控制。
 
 上述基准的共同价值在于提供可执行判定，使代码生成研究能够超越文本相似度指标。本文沿用 HumanEval 与 MBPP，是因为二者均为函数级任务，适合在同一执行器下比较测试时编排策略。除通过率外，本文同步记录调用次数与令牌成本，以反映接口部署中的实际约束。
 
 \subsection{执行反馈驱动的程序修补}
 
-执行反馈为代码生成提供了自然的外部验证信号。Self-Debug、Reflexion、CRITIC、Self-Refine、AgentCoder 与 CodeT 等工作表明，错误信息、测试结果或工具反馈可以被回注到模型上下文中，用于修补失败程序或生成新的候选实现\cite{chen2024selfdebug,shinn2023reflexion,gou2024critic,madaan2023selfrefine,huang2024agentcoder,chen2023codet}。这一路线的核心问题在于反馈如何进入下一轮生成。完整回溯包含较多运行环境文本，会增加令牌成本；压缩反馈则把错误类型、关键片段和修补方向组织成更短的约束。
+执行反馈为代码生成提供了自然的外部验证信号。Self-Debug\cite{chen2024selfdebug} 与 Reflexion\cite{shinn2023reflexion} 表明，模型可以利用执行错误或语言化反馈修补失败程序。CRITIC\cite{gou2024critic} 与 Self-Refine\cite{madaan2023selfrefine} 进一步展示了外部工具反馈或自反馈在迭代修正中的作用。AgentCoder\cite{huang2024agentcoder} 与 CodeT\cite{chen2023codet} 则从多智能体协作或生成测试的角度利用执行信号筛选候选实现。CodeRL\cite{le2022coderl} 说明单元测试结果也可以作为训练阶段的强化学习信号；近期自调试研究中的 LLM-guided self-debugging\cite{adnan2025llmsguided} 与 Revisit Self-Debugging\cite{chen2025revisit} 继续讨论自生成测试与调试反馈在代码生成中的有效边界。这一路线的核心问题在于反馈如何进入下一轮生成。完整回溯包含较多运行环境文本，会增加令牌成本；压缩反馈则把错误类型、关键片段和修补方向组织成更短的约束。
 
 本文继承执行反馈修补的基本思想，并将其放入预算分档协议中考察：反馈修补是中预算档位的主要计算投向。本文单独比较压缩反馈与完整回溯，在相同流程下观察通过率与令牌成本的差异。
 
 \subsection{测试时计算扩展与候选筛选}
 
-另一条相关路线是通过测试时计算扩展提高覆盖率。AlphaCode 展示了大规模候选生成与筛选在竞赛级代码生成中的作用\cite{li2022alphacode}，后续测试时扩展工作进一步讨论候选数量、筛选策略与成本之间的关系\cite{li2025sstar}。这些方法说明，在模型能力既定时，额外候选可以提高命中可行解的概率，同时带来调用次数和令牌成本的增长。
+另一条相关路线是通过测试时计算扩展提高覆盖率。AlphaCode\cite{li2022alphacode} 展示了大规模候选生成与筛选在竞赛级代码生成中的作用，后续 S*\cite{li2025sstar} 进一步讨论候选数量、筛选策略与成本之间的关系。面向成本控制，Hybrid LLM\cite{ding2024hybrid} 使用路由器在大小模型之间分配查询，LLM Cascades\cite{yue2024cascades} 则用级联结构降低强模型调用成本。更一般地，链式思维\cite{wei2022cot} 与自一致性\cite{wang2023selfconsistency} 说明，多条推理轨迹可以提升复杂任务的答案稳定性。ReAct\cite{yao2023react} 与 Toolformer\cite{schick2023toolformer} 从工具交互角度扩展了测试时决策空间，Tree of Thoughts\cite{yao2023tot} 则把显式搜索引入复杂问题求解。这些方法说明，在模型能力既定时，额外候选或额外推理路径可以提高命中可行解的概率，同时带来调用次数和令牌成本的增长。
 
 本文的级联档与该思路一致，即把高预算主要投入候选扩展和执行筛选。通过关闭候选扩展、限制精修次数等消融，本文区分主增益来源与边际后处理，并用经验收益率 $\rho$ 描述追加预算的成本前沿。与强调单一技巧提升的工作不同，本文进一步关注同一实现下的预算组织问题：当分流、修补、候选扩展和精修同时可用时，系统需要以可比较、可复现和可记账的方式组织它们。因此，本文先在固定评测口径下给出端到端结果，再用机制实验解释预算投向的收益来源。

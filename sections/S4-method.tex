@@ -1,7 +1,7 @@
 \section{预算分档编排方法}
 \label{sec:method}
 
-本节描述四档协议在实现层面的组织方式。系统围绕同一个外层闭环运行：读入任务、生成候选、执行测试、记录结果；若失败，则在当前预算档位允许的范围内追加修补、重链、救援或级联。整体流程见图~\ref{fig:overall_framework}。
+本节描述四档协议在实现层面的组织方式。系统围绕同一个外层闭环运行：读入任务、生成候选、执行测试、记录结果；若失败，则在当前预算档位允许的范围内追加修补、重链、救援或级联。将程序生成与执行反馈连接起来的思想可追溯到执行引导程序综合和 REPL 式程序搜索\cite{chen2019execution,ellis2019write}。整体流程见图~\ref{fig:overall_framework}。
 
 \input{figures/F1-overall-framework}
 
@@ -78,7 +78,7 @@ s_i = p_i+\sigma_i+\tau_i+b_i+a_i+e_i.
 \subsection{失败反馈与救援链}
 \label{sec:rescue}
 
-执行失败后，系统把失败信息转化为下一轮生成可利用的局部约束。其基本思路与 Self-Debug、Reflexion 和 CRITIC 等执行反馈工作一致\cite{chen2024selfdebug,shinn2023reflexion,gou2024critic}，本文进一步考察反馈形式对令牌成本与修补收益的影响。
+执行失败后，系统把失败信息转化为下一轮生成可利用的局部约束。其基本思路与 Self-Debug、Reflexion 等执行反馈工作一致\cite{chen2024selfdebug,shinn2023reflexion}，也与利用工具反馈进行自我修正的研究方向相近\cite{gou2024critic,madaan2023selfrefine}。本文进一步考察反馈形式对令牌成本与修补收益的影响。
 
 在分流+重链与救援档中，系统先根据执行器返回的 \texttt{check\_correctness} 字符串判断失败形态。该判断由规则函数完成：未闭合字符串、语法非法等更倾向于替换生成；缺参、参数数量不匹配、名称未定义或缩进错误等归入修补；其余进入更保守的替换或救援路径。当单步与结构化双路径均失败时，系统比较二者错误标签，以决定后续修补轮数。
 
