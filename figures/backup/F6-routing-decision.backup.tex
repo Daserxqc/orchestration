@@ -1,0 +1,33 @@
+\begin{figure}[t]
+\centering
+\input{figures/F0-journal-style}
+\resizebox{0.98\linewidth}{!}{%
+\begin{tikzpicture}[paperfig, node distance=4mm and 4mm]
+  \node[paperdata, text width=18mm] (p) {题面\\$p_i$};
+  \node[paperdata, right=of p, text width=18mm] (sig) {签名\\$\sigma_i$};
+  \node[paperdata, right=of sig, text width=18mm] (test) {测试\\$\tau_i$};
+  \node[paperdata, below=of p, text width=18mm] (bd) {边界\\$b_i$};
+  \node[paperdata, right=of bd, text width=18mm] (amb) {歧义\\$a_i$};
+  \node[paperdata, right=of amb, text width=18mm] (ext) {体量\\$e_i$};
+
+  \node[paperstate, below=8mm of amb, text width=34mm] (score)
+    {结构分数\\$s_i=p_i+\sigma_i+\tau_i+b_i+a_i+e_i$};
+  \node[papermodel, below=of score, text width=28mm] (gate)
+    {阈值门控\\$s_i\ge\tau_{\mathrm{eff}}$};
+
+  \node[paperproc, below left=8mm and 4mm of gate, text width=24mm] (light)
+    {轻路径\\低成本结束/修补};
+  \node[paperproc, below right=8mm and 4mm of gate, text width=24mm] (heavy)
+    {重路径\\重链与救援};
+
+  \foreach \n in {p,sig,test,bd,amb,ext} {
+    \draw[paperdash] (\n.south) -- (score.north);
+  }
+  \draw[paperline] (score) -- (gate);
+  \draw[paperline] (gate) -- node[papernote, left] {$r_i=0$} (light);
+  \draw[paperline] (gate) -- node[papernote, right] {$r_i=1$} (heavy);
+\end{tikzpicture}%
+}
+\caption{结构难度路由决策}
+\label{fig:routing_decision}
+\end{figure}

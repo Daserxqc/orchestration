@@ -1,0 +1,45 @@
+\begin{figure}[t]
+\centering
+\input{figures/F0-journal-style}
+\resizebox{0.98\linewidth}{!}{%
+\begin{tikzpicture}[paperfig, x=1mm, y=1mm]
+  \node[paperdata, text width=14mm] (p) at (7,34) {题面\\$p_i$};
+  \node[paperdata, text width=14mm] (sig) at (22,34) {签名\\$\sigma_i$};
+  \node[paperdata, text width=14mm] (test) at (37,34) {测试\\$\tau_i$};
+  \node[paperdata, text width=14mm] (bd) at (7,22) {边界\\$b_i$};
+  \node[paperdata, text width=14mm] (amb) at (22,22) {歧义\\$a_i$};
+  \node[paperdata, text width=14mm] (ext) at (37,22) {体量\\$e_i$};
+
+  \draw[paperBlueLine, line width=0.45pt] (3,39.5) -- (11,39.5);
+  \draw[paperBlueLine, line width=0.45pt] (18,39.5) rectangle (26,37);
+  \draw[paperBlueLine, line width=0.45pt] (33,39.5) -- (41,39.5);
+  \draw[paperBlueLine, line width=0.45pt] (33,37.5) -- (41,37.5);
+  \draw[paperBlueLine, line width=0.45pt] (3,27.4) -- (11,27.4);
+  \draw[paperBlueLine, line width=0.45pt] (18,27.2) arc[start angle=190,end angle=350,radius=4];
+  \draw[paperBlueLine, line width=0.45pt] (34,26.5) rectangle (40,28.5);
+
+  \node[papermodel, text width=24mm, minimum height=18mm] (score) at (22,6)
+    {结构分数\\$s_i=\sum$ 子项};
+  \draw[paperAmberLine, line width=0.8pt] (14,7) arc[start angle=190,end angle=-10,radius=8];
+  \draw[paperAmberLine, line width=0.8pt, -{Stealth[length=1.8mm]}] (22,7) -- (27,12);
+  \foreach \n in {p,sig,test,bd,amb,ext} {
+    \draw[paperdash] (\n.south) -- (score.north);
+  }
+
+  \node[paperstate, text width=18mm] (gate) at (49,6) {门控\\$s_i\ge\tau_{\mathrm{eff}}$};
+  \draw[paperline] (score) -- (gate);
+  \draw[paperVioletLine, line width=0.65pt] (44,11) -- (54,11);
+  \fill[paperVioletLine] (50,11) circle (1.1);
+
+  \node[paperproc, text width=19mm] (light) at (38,-12) {轻路径\\\scriptsize 低成本结束/修补};
+  \node[paperproc, text width=19mm] (heavy) at (60,-12) {重路径\\\scriptsize 重链与救援};
+  \draw[paperline] (gate) -- node[papernote, left] {$r_i=0$} (light);
+  \draw[paperline] (gate) -- node[papernote, right] {$r_i=1$} (heavy);
+
+  \node[papernote, text width=45mm] at (31,-24)
+    {路由只使用预执行结构信息；随机置换对照用于分离覆盖率与结构对齐};
+\end{tikzpicture}%
+}
+\caption{结构难度路由决策}
+\label{fig:routing_decision}
+\end{figure}

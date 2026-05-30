@@ -1,46 +1,6 @@
 \begin{figure*}[t]
 \centering
-\resizebox{\linewidth}{!}{
-\begin{tikzpicture}[
-  node distance=7mm and 10mm,
-  >=Latex,
-  line/.style={-Latex, very thick, draw=black!65},
-  dashedline/.style={-Latex, thick, dashed, draw=black!55},
-  box/.style={draw, rounded corners=3pt, very thick, minimum height=10mm, align=center, font=\small, inner xsep=4mm},
-  io/.style={box, fill=blue!7, draw=blue!55},
-  stage1/.style={box, fill=green!8, draw=green!45!black},
-  stage2/.style={box, fill=orange!10, draw=orange!60!black},
-  stage3/.style={box, fill=purple!10, draw=purple!60!black},
-  stage4/.style={box, fill=teal!10, draw=teal!60!black},
-  eval/.style={box, fill=cyan!12, draw=cyan!55!black},
-  note/.style={draw, rounded corners=2pt, fill=white, font=\scriptsize, align=left, inner sep=2pt}
-]
-
-\node[io] (task) {任务输入\\\scriptsize 题面 + 测试接口};
-\node[stage1, right=of task] (s1) {单步\\\scriptsize 一次生成并判定};
-\node[stage2, right=of s1] (s2) {单步+修补\\\scriptsize 失败后轻量修补};
-\node[stage3, right=of s2] (s3) {分流+重链与救援\\\scriptsize easy/hard 路由 + 失败闭环};
-\node[stage4, right=of s3] (s4) {级联\\\scriptsize 多候选 + 执行筛选 + refine};
-\node[eval, right=of s4] (out) {统一评测统计\\\scriptsize pass@1 / 调用次数 / token};
-
-\draw[line] (task) -- (s1);
-\draw[line] (s1) -- (s2);
-\draw[line] (s2) -- (s3);
-\draw[line] (s3) -- (s4);
-\draw[line] (s4) -- (out);
-
-\node[note, above=2mm of s2] (b1) {中预算：\\更多投向失败修补};
-\node[note, above=2mm of s4] (b2) {高预算：\\更多投向候选扩展与组织};
-\draw[dashedline] (b1.south) -- (s2.north);
-\draw[dashedline] (b2.south) -- (s4.north);
-
-\coordinate (fbstart) at ($(s4.south)+(0,-5mm)$);
-\coordinate (fbmid) at ($(s2.south)+(0,-9mm)$);
-\draw[dashedline] (s4.south) -- (fbstart) -- (fbmid) -- (s2.south);
-\node[note, below=6mm of s3] {失败信息压缩后回注修补/替换，\\形成统一外层闭环};
-
-\end{tikzpicture}
-}
-\caption{预算分档编排的整体框架（统一实现）。系统以单步生成为起点，经失败修补与难度分流进入重链，再在更高预算下扩展到候选探索、执行筛选与后续 refine，形成\textbf{从单步到级联}的递进。主实验在 HumanEval 与 MBPP 上复现同一套分档流程与统计口径，用以检验该链条是否随题型分布与难度天花板而漂移。}
+\includegraphics[width=0.98\textwidth]{gpt-fig2-overall-framework.png}
+\caption{预算分档编排整体框架}
 \label{fig:overall_framework}
 \end{figure*}

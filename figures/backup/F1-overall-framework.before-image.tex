@@ -1,0 +1,51 @@
+\begin{figure}[t]
+\centering
+\input{figures/F0-journal-style}
+\resizebox{0.98\linewidth}{!}{%
+\begin{tikzpicture}[paperfig, x=1mm, y=1mm]
+  \node[paperdata, text width=18mm] (task) at (7,34) {任务输入\\\scriptsize 题面/签名/测试};
+  \node[papermodel, text width=20mm] (gen) at (31,34) {单步候选\\\scriptsize 一次生成};
+  \node[paperproc, text width=17mm] (exec) at (51,34) {执行\\判定};
+
+  \draw[paperline] (task) -- (gen);
+  \draw[paperline] (gen) -- (exec);
+
+  \node[paperout, text width=16mm] (done) at (51,18) {通过\\记录结果};
+  \draw[paperline] (exec) -- node[papernote, right] {pass} (done);
+
+  \node[paperstate, text width=19mm] (residual) at (31,18) {残差样本\\\scriptsize 单步失败};
+  \draw[paperline] (exec) -- node[papernote, above] {fail} (residual);
+
+  \node[paperproc, text width=17mm] (repair) at (7,1) {修补\\\scriptsize 错误回注};
+  \node[paperproc, text width=17mm] (route) at (23,1) {分流\\\scriptsize 难度门控};
+  \node[paperproc, text width=17mm] (rescue) at (39,1) {救援\\\scriptsize 重链闭环};
+  \node[paperproc, text width=17mm] (cascade) at (55,1) {级联\\\scriptsize 候选覆盖};
+
+  \draw[paperline] (residual) -- (repair);
+  \draw[paperline] (repair) -- (route);
+  \draw[paperline] (route) -- (rescue);
+  \draw[paperline] (rescue) -- (cascade);
+  \draw[paperline] (cascade.east) to[bend right=28] node[papernote, right] {筛选} (done.east);
+
+  \draw[paperAmberLine, line width=0.45pt] (4,-9) -- (58,-9);
+  \foreach \x/\lab/\txt in {
+    7/单步/最低成本,
+    17/修补/反馈预算,
+    31/分流/结构预算,
+    45/救援/失败预算,
+    55/级联/覆盖预算
+  } {
+    \draw[paperAmberLine, line width=0.45pt] (\x,-10.5) -- (\x,-7.5);
+    \node[font=\scriptsize, align=center] at (\x,-14) {\lab\\\txt};
+  }
+
+  \draw[paperTealLine, line width=0.7pt] (4,7) -- ++(0,3) -- ++(8,0) -- ++(0,3);
+  \draw[paperTealLine, line width=0.7pt] (20,7) -- ++(0,3) -- ++(8,0) -- ++(0,3);
+  \draw[paperTealLine, line width=0.7pt] (36,7) -- ++(0,3) -- ++(8,0) -- ++(0,3);
+  \node[papernote, text width=46mm] at (31,10)
+    {新增预算只作用于失败后的残差样本，逐级增加反馈、路由和候选覆盖};
+\end{tikzpicture}%
+}
+\caption{预算分档编排整体框架}
+\label{fig:overall_framework}
+\end{figure}

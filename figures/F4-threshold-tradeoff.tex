@@ -1,0 +1,27 @@
+\begin{figure}[t]
+\centering
+\input{figures/F0-journal-style}
+\resizebox{0.98\linewidth}{!}{%
+\begin{tikzpicture}[paperfig, x=1mm, y=1mm]
+  \draw[paperaxis] (0,0) -- (64,0);
+  \draw[paperaxis] (0,0) -- (0,38);
+  \foreach \x/\lab in {0/20.5,16/21.8,32/23.1,48/24.4,64/25.7} {
+    \draw[papergrid] (\x,0) -- (\x,38);
+    \node[font=\scriptsize, below] at (\x,0) {\lab};
+  }
+  \foreach \y/\lab in {0/88.0,13/88.5,26/89.0,38/89.5} {
+    \draw[papergrid] (0,\y) -- (64,\y);
+    \node[font=\scriptsize, left] at (0,\y) {\lab};
+  }
+  \draw[paperplotA] (58.3,24.8) -- (44.5,20.9) -- (18.3,16.9) -- (14.4,20.9) -- (14.5,12.9) -- (1.0,0.9);
+  \foreach \x/\y/\lab in {58.3/24.8/$\tau=1.0$,44.5/20.9/$1.1$,18.3/16.9/$1.4$,14.4/20.9/$1.6$,14.5/12.9/$1.7$,1.0/0.9/$1.8$} {
+    \node[papermarkA] at (\x,\y) {};
+    \node[font=\scriptsize, above right] at (\x,\y) {\lab};
+  }
+  \node[font=\scriptsize] at (32,-7) {总令牌（万）};
+  \node[font=\scriptsize, rotate=90] at (-8,19) {pass@1（\%）};
+\end{tikzpicture}%
+}
+\caption{结构阈值的精度--成本变化}
+\label{fig:threshold_tradeoff}
+\end{figure}

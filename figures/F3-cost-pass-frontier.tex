@@ -1,0 +1,51 @@
+\begin{figure*}[t]
+\centering
+\input{figures/F0-journal-style}
+\resizebox{0.95\textwidth}{!}{%
+\begin{tikzpicture}[paperfig, x=1mm, y=1mm]
+  \begin{scope}
+    \node[font=\small\bfseries] at (27,43) {MBPP};
+    \draw[paperaxis] (0,0) -- (55,0);
+    \draw[paperaxis] (0,0) -- (0,36);
+    \foreach \x/\lab in {0/10,18/18,36/26,54/34} {
+      \draw[papergrid] (\x,0) -- (\x,36);
+      \node[font=\scriptsize, below] at (\x,0) {\lab};
+    }
+    \foreach \y/\lab in {0/80,12/84,24/88,36/92} {
+      \draw[papergrid] (0,\y) -- (55,\y);
+      \node[font=\scriptsize, left] at (0,\y) {\lab};
+    }
+    \draw[paperplotA] (3.1,6.5) -- (9.3,17.1) -- (26.6,21.9) -- (49.8,30.1);
+    \foreach \x/\y/\lab in {3.1/6.5/单步,9.3/17.1/修补,26.6/21.9/分流,49.8/30.1/级联} {
+      \node[papermarkA] at (\x,\y) {};
+      \node[font=\scriptsize, above] at (\x,\y) {\lab};
+    }
+    \node[font=\scriptsize] at (27,-7) {总令牌（万）};
+    \node[font=\scriptsize, rotate=90] at (-8,18) {通过率（\%）};
+  \end{scope}
+
+  \begin{scope}[xshift=76mm]
+    \node[font=\small\bfseries] at (27,43) {HumanEval};
+    \draw[paperaxis] (0,0) -- (55,0);
+    \draw[paperaxis] (0,0) -- (0,36);
+    \foreach \x/\lab in {0/6.2,18/6.8,36/7.4,54/8.0} {
+      \draw[papergrid] (\x,0) -- (\x,36);
+      \node[font=\scriptsize, below] at (\x,0) {\lab};
+    }
+    \foreach \y/\lab in {0/97,12/98,24/99,36/100} {
+      \draw[papergrid] (0,\y) -- (55,\y);
+      \node[font=\scriptsize, left] at (0,\y) {\lab};
+    }
+    \draw[paperplotB] (8.8,6.7) -- (14.8,26.3) -- (39.5,28.7) -- (35.5,33.6);
+    \foreach \x/\y/\lab in {8.8/6.7/单步,14.8/26.3/修补,39.5/28.7/分流,35.5/33.6/级联} {
+      \node[papermarkB] at (\x,\y) {};
+      \node[font=\scriptsize, above] at (\x,\y) {\lab};
+    }
+    \node[font=\scriptsize] at (27,-7) {总令牌（万）};
+    \node[font=\scriptsize, rotate=90] at (-8,18) {通过率（\%）};
+  \end{scope}
+\end{tikzpicture}%
+}
+\caption{预算分档的成本--通过率前沿}
+\label{fig:cost_pass_frontier}
+\end{figure*}

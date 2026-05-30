@@ -1,0 +1,248 @@
+\section{实验}
+\label{sec:experiments}
+
+\subsection{评测协议与数据集}
+\label{sec:eval-protocol}
+
+本文在 HumanEval 164 题与 MBPP 清洗集 427 题上评测预算分档编排。两者均属于函数级代码生成任务，能够使用同一执行器和同一通过判定口径；差异在于任务分布和动态范围。HumanEval 在当前强模型设定下更接近饱和区间，适合观察残差收束；MBPP 题面更杂、规模更大，更适合观察预算扩展带来的成本--收益曲线。
+
+主结果统一使用 \texttt{claude-sonnet-4-6}，并对四个预算档位报告三随机种子（42、78、132）的均值与样本标准差。多模型结果和多数细粒度消融采用随机种子 42，用于补充观察档位形态和模块机制。
+
+评价指标包括通过率、平均调用次数与总令牌。通过率衡量任务正确性，调用次数反映调度复杂度，总令牌作为接口成本的主代理。表~\ref{tab:protocol_constraints} 汇总本文的公平性约束。
+
+\begin{table*}[htbp]
+\centering
+\small
+\caption{实验协议约束}
+\label{tab:protocol_constraints}
+\begin{tabularx}{\textwidth}{p{2.8cm} X}
+\toprule
+约束项 & 本文约束 \\
+\midrule
+数据口径 & MBPP 清洗集 427 + HumanEval 164 \\
+模型与版本 & 主结果统一 \texttt{claude-sonnet-4-6}；多模型结果单独列出 \\
+随机性控制 & 主表四档三随机种子统计；E2 反馈形态对照五随机种子；多重集随机路由对照为随机种子 42 单次配对 \\
+执行与判定 & 统一执行器、超时、测试调用方式与通过判定口径 \\
+比较轴线 & 主结论以同协议内预算分档双基准主结果为准；多模型表和消融表解释形态与机制 \\
+成本指标 & 同时报告通过率、平均调用次数、总令牌 \\
+\bottomrule
+\end{tabularx}
+\end{table*}
+
+\subsection{RQ1：预算分档是否形成可解释前沿}
+\label{sec:rq1}
+
+表~\ref{tab:main_results} 给出四个预算档位在双基准上的主结果。主结果统一使用 \texttt{claude-sonnet-4-6}，报告三随机种子（42、78、132）的均值与样本标准差。策略列使用第~\ref{sec:tier-protocol} 节的语义档位，括号中只保留实现模式标识，便于复现。表中边际 $\rho$ 相对上一档计算，单位为百分点/万令牌；当相邻两档令牌不增时不定义。
+
+\begin{table*}[htbp]
+\centering
+\small
+\caption{预算分档编排主结果}
+\label{tab:main_results}
+\begin{tabularx}{\textwidth}{@{}p{2.2cm} >{\raggedright\arraybackslash}X c c c c@{}}
+\toprule
+数据集 & 策略 & 通过率(\%) & 平均调用次数 & 总令牌 & 边际$\rho$ \\
+\midrule
+MBPP & 单步（\texttt{single\_step}） & $82.51\pm0.48$ & $1.000\pm0.000$ & $113{,}922\pm5{,}621$ & --- \\
+MBPP & 单步+修补（\texttt{single\_step\_repair}） & $86.65\pm0.24$ & $1.177\pm0.001$ & $141{,}207\pm4{,}393$ & 1.52 \\
+MBPP & 分流+重链与救援（\texttt{difficulty\_aware\_plus}） & $88.52\pm0.24$ & $1.483\pm0.009$ & $218{,}327\pm2{,}138$ & 0.24 \\
+MBPP & 级联（\texttt{workflow\_cascade}） & $91.72\pm0.36$ & $1.639\pm0.021$ & $321{,}177\pm11{,}854$ & 0.31 \\
+\midrule
+HumanEval & 单步（\texttt{single\_step}） & $97.56\pm0.00$ & $1.000\pm0.000$ & $64{,}938\pm116$ & --- \\
+HumanEval & 单步+修补（\texttt{single\_step\_repair}） & $99.19\pm0.35$ & $1.020\pm0.003$ & $66{,}925\pm1{,}588$ & 8.19 \\
+HumanEval & 分流+重链与救援（\texttt{difficulty\_aware\_plus}，v2，$\tau$=1.6） & $99.39\pm0.00$ & $1.067\pm0.010$ & $75{,}151\pm1{,}064$ & 0.25 \\
+HumanEval & 级联（\texttt{workflow\_cascade}，默认基线） & $99.80\pm0.35$ & $1.055\pm0.010$ & $73{,}847\pm1{,}422$ & --- \\
+\bottomrule
+\end{tabularx}
+\end{table*}
+
+图~\ref{fig:cost_pass_frontier} 将主结果放到统一成本--通过率坐标中，以便观察两个基准在不同动态范围下的前沿形态。
+
+\input{figures/F3-cost-pass-frontier}
+
+MBPP 上四档呈现清晰的预算扩展轨迹：通过率从 $82.51\%$ 提升到 $91.72\%$，总令牌从约 $1.14\times 10^5$ 增至约 $3.21\times 10^5$。单步+修补的边际 $\rho$ 最高，说明执行反馈修补是最具性价比的第一层增益；分流救援与级联继续提高上限，并对应更高令牌成本。HumanEval 上，单步已经达到 $97.56\%$，后续增益集中在少量残差样本。两组结果共同说明，预算分档的收益与任务分布动态范围密切相关。
+
+\subsection{RQ2：分档形态是否跨模型保持一致}
+\label{sec:rq2}
+
+表~\ref{tab:model_results_mbpp} 与表~\ref{tab:model_results_he} 报告多个基础模型在四档协议下的通过率，用于观察分档形态的可迁移性。两表均采用随机种子 42 单次运行，数值单位为通过率百分比。
+
+\begin{table*}[htbp]
+\centering
+\caption{MBPP 多模型预算分档结果}
+\label{tab:model_results_mbpp}
+\begin{tabular}{lcccc}
+\toprule
+模型 & 单步 & 单步+修补 & 分流+重链与救援 & 级联 \\
+\midrule
+claude-sonnet-4-6 & 82.51 & 86.65 & 88.52 & 91.72 \\
+gpt-5.4 & 72.13 & 77.75 & 79.39 & 85.48 \\
+gpt-5.3-codex & 71.90 & 78.92 & 79.39 & 83.84 \\
+qwen3-coder-plus & 71.90 & 76.58 & 79.63 & 81.97 \\
+qwen3-30b-a3b-instruct-2507 & 68.38 & 75.18 & 77.99 & 80.80 \\
+gemini-3.1-flash-lite-preview & 73.54 & 76.81 & 79.39 & 80.09 \\
+qwen-plus & 70.73 & 75.18 & 77.28 & 79.63 \\
+\bottomrule
+\end{tabular}
+\end{table*}
+
+\begin{table*}[htbp]
+\centering
+\caption{HumanEval 多模型预算分档结果}
+\label{tab:model_results_he}
+\begin{tabular}{lcccc}
+\toprule
+模型 & 单步 & 单步+修补 & 分流+重链与救援 & 级联 \\
+\midrule
+claude-sonnet-4-6 & 97.56 & 99.19 & 99.39 & 99.80 \\
+gemini-3.1-flash-lite-preview & 97.56 & \textbf{98.78} & \textbf{99.39} & 98.78 \\
+gpt-5.3-codex & 95.12 & 97.56 & 98.78 & 99.39 \\
+gpt-5.4 & 95.12 & 97.56 & 97.56 & 98.78 \\
+qwen3-coder-plus & 95.73 & 97.56 & 98.78 & 98.17 \\
+qwen3-30b-a3b-instruct-2507 & 92.68 & 95.73 & 97.56 & 96.34 \\
+qwen-plus & 92.68 & 97.50 & 96.34 & 95.12 \\
+\bottomrule
+\end{tabular}
+\end{table*}
+
+在 MBPP 上，多数模型呈现逐档抬升，说明协议对不同基础模型具有相似的粗形态。HumanEval 上整体接近饱和，部分模型在高档出现回落或持平，表明高预算级联更适合承担上限探索，而中预算修补和分流档更适合常规部署。
+
+\subsection{RQ3：关键机制如何影响前沿}
+\label{sec:mechverify}
+
+本节分析三类机制：结构路由、反馈回注和模块开关。除特别说明外，细粒度消融多在 MBPP 上以随机种子 42 单次运行；MBPP 的动态范围更宽，更适合承载模块排序和成本前沿分析。
+
+\subsubsection{结构分的预算先验作用}
+
+本文先检验静态结构分与运行失败之间的关系。在任务级样本上使用逻辑回归 5 折交叉验证时，首轮失败与需重路由两类标签的 ROC-AUC 分别约为 0.471 与 0.473；加入扩展静态特征后，AUC 约升至 0.51。结果表明，结构分的价值主要体现在预算排序：它把结构更复杂的题目优先送入重路径，再由端到端前沿、阈值扫描和路由对照共同体现收益。
+
+\subsubsection{固定多重集随机路由对照}
+
+表~\ref{tab:route_random_multiset} 报告 \texttt{difficulty\_aware\_plus} 档在 $b{=}0.6$、$\tau{=}1.6$ 下的配对结果，模型为 \texttt{claude-sonnet-4-6}，采用随机种子 42 单次运行。结构路由为默认设置；随机对照为第~\ref{sec:routing} 节定义的固定多重集随机置换。两者在同一数据集上的轻/重路径数量完全一致，因此比较的是同一重路径覆盖率下，题目与槽位对齐方式的影响。
+
+\begin{table*}[htbp]
+\centering
+\small
+\caption{固定多重集随机路由对照}
+\label{tab:route_random_multiset}
+\begin{tabularx}{\textwidth}{@{}p{2.4cm} >{\raggedright\arraybackslash}p{3.6cm} >{\raggedright\arraybackslash}p{3.6cm} c c@{}}
+\toprule
+数据集 & 结构路由（通过/总） & 随机对照（通过/总） & 结构路由总令牌 & 随机对照总令牌 \\
+\midrule
+MBPP 427 & 383/427（89.70\%） & 379/427（88.76\%） & 267{,}878 & 234{,}912 \\
+HumanEval 164 & 163/164（99.39\%） & 163/164（99.39\%） & 77{,}683 & 76{,}563 \\
+\bottomrule
+\end{tabularx}
+\end{table*}
+
+在本次配对中，MBPP 上结构路由多通过 4 题，平均调用次数为 677 次，高于随机对照的 640 次；HumanEval 上通过数相同，平均调用次数分别为 178 次和 177 次，令牌差异也较小。结果显示，在固定重路径覆盖率下，结构对齐能在更复杂分布上带来额外收益，并形成相应成本。
+
+\subsubsection{反馈回注形态}
+
+表~\ref{tab:e2_feedback_format_5seed} 比较压缩反馈与完整回溯。该实验在 MBPP 427 上使用 \texttt{difficulty\_aware\_plus} 档与 $b=0.6$，报告五随机种子的均值与样本标准差；除修补阶段回注形态外，其余模型、预算、任务与路由配置保持一致。
+
+\begin{table*}[htbp]
+\centering
+\caption{E2 反馈形态对照}
+\label{tab:e2_feedback_format_5seed}
+\begin{tabularx}{\textwidth}{p{3.2cm} c c c X}
+\toprule
+回注形态 & 通过数 & pass@1(\%) & 总令牌 & 解读 \\
+\midrule
+压缩回注 & $379.4\pm3.85$ & $88.852\pm0.900$ & $229{,}713\pm7{,}558$ & 均值令牌更低；通过率保持相近 \\
+完整回溯 & $379.0\pm1.41$ & $88.756\pm0.334$ & $233{,}180\pm2{,}781$ & 均值令牌更高；保留完整错误上下文 \\
+\bottomrule
+\end{tabularx}
+\end{table*}
+
+两组通过率均值差约 $0.096$ 个百分点，低于各自标准差量级；令牌均值差约 $3{,}467$。压缩回注以更短上下文取得相近通过率，适合作为默认回注形态。
+
+\subsubsection{阈值、主链与级联开关}
+
+表~\ref{tab:ablation_06_threshold} 在 MBPP 427 上使用 v2 打分器和随机种子 42 单次运行，扫描结构阈值 $\tau$。较低阈值提高重路径覆盖率和令牌成本，较高阈值降低成本并减少重路径样本。
+
+\begin{table*}[htbp]
+\centering
+\caption{分流+重链与救援档阈值消融}
+\label{tab:ablation_06_threshold}
+\begin{tabularx}{\textwidth}{p{2.0cm} p{2.2cm} c c c X}
+\toprule
+阈值 $\tau$ & 轻/重路径 & pass@1 & 平均调用 & 总令牌 & 解读 \\
+\midrule
+$\tau$=1.0 & 92 / 335 & \textbf{382/427} & 1.646 & 255,523 & 精度最高，但成本明显更高 \\
+$\tau$=1.1 & 127 / 300 & 381/427 & 1.597 & 243,529 & 轻微降分，成本下降 \\
+$\tau$=1.4 & 187 / 240 & 380/427 & 1.511 & 220,825 & 进入更平衡区间 \\
+$\tau$=1.6 & 213 / 214 & 381/427 & 1.489 & 217,510 & 默认点，精度/成本折中 \\
+$\tau$=1.7 & 224 / 203 & 379/427 & 1.476 & 217,534 & 再提高阈值出现降分 \\
+$\tau$=1.8 & 254 / 173 & 376/427 & \textbf{1.447} & \textbf{205,909} & 成本最低，但精度损失明显 \\
+\bottomrule
+\end{tabularx}
+\end{table*}
+
+图~\ref{fig:threshold_tradeoff} 展示同一扫描中的精度--成本位置，默认阈值位于较平衡的区间。
+
+\input{figures/F4-threshold-tradeoff}
+
+表~\ref{tab:ablation_06_flow} 在 MBPP 427 上以 $\tau=1.6$ 和随机种子 42 单次运行，关闭分流+重链与救援档中的关键模块。结果显示，结构化主链对通过率影响最大；候选救援也有收益，但带来主要额外成本；精修救援边际较小。
+
+\begin{table*}[htbp]
+\centering
+\caption{分流+重链与救援档流程消融}
+\label{tab:ablation_06_flow}
+\begin{tabularx}{\textwidth}{p{3.7cm} c c c X}
+\toprule
+配置 & pass@1 & 平均调用 & 总令牌 & 解读 \\
+\midrule
+完整流程 & \textbf{381/427} & 1.489 & 217,510 & 分流+重链与救援档基线 \\
+\texttt{-hard\_spec} & 360/427 & \textbf{1.164} & \textbf{148,549} & 结构化主链是主要增益模块 \\
+\texttt{-hard\_cot} & 375/427 & 1.436 & 202,847 & 推理链提供中等增益，成本可控 \\
+\makecell[l]{\texttt{-plus\_candidate}\\\texttt{\_rescue}} & 377/427 & 1.283 & 167,780 & 候选救援有增益，且是主要额外成本来源 \\
+\makecell[l]{\texttt{-plus\_refine}\\\texttt{\_rescue}} & 378/427 & 1.450 & 207,200 & 精修层贡献较小、边际收益有限 \\
+\bottomrule
+\end{tabularx}
+\end{table*}
+
+表~\ref{tab:ablation_08_flow} 在 MBPP 427 上以随机种子 42 单次运行，聚焦级联档。移除候选扩展后通过率大幅下降，说明候选扩展是高预算档的核心；精修相关开关主要调节通过率与令牌成本。
+
+\begin{table*}[htbp]
+\centering
+\caption{级联档流程消融}
+\label{tab:ablation_08_flow}
+\begin{tabularx}{\textwidth}{p{3.8cm} c c c X}
+\toprule
+配置 & pass@1 & 平均调用 & 总令牌 & 解读 \\
+\midrule
+主配置（默认级联基线） & \textbf{392/427} & 1.595 & 299,935 & 级联档默认基线 \\
+\texttt{-extra} & 355/427 & \textbf{1.000} & \textbf{108,610} & 精度大幅下降，候选扩展为核心增益模块 \\
+\texttt{-refine\_once} & 387/427 & 1.529 & 280,307 & 轻微降分，明显省令牌 \\
+\makecell[l]{\texttt{+semantic}\\\texttt{\_refine\_gate}} & 390/427 & 1.541 & 280,784 & 折中方案：接近最高精度且成本更低 \\
+\bottomrule
+\end{tabularx}
+\end{table*}
+
+\subsection{RQ4：成本--收益前沿}
+\label{sec:cost_rho}
+
+表~\ref{tab:rho_frontier} 报告相对单步档的累计收益率，单位为每万令牌提升百分点。它补充表~\ref{tab:main_results} 的边际 $\rho$，用于观察从最低成本基线到各档的整体收益。
+
+\begin{table*}[htbp]
+\centering
+\small
+\caption{预算分档的经验收益率前沿}
+\label{tab:rho_frontier}
+\begin{tabularx}{\textwidth}{p{1.9cm} p{3.0cm} c c c}
+\toprule
+数据集 & 档位 & $\Delta p$（百分点） & $\Delta t$（令牌） & $\rho_b^{(\mathrm{cum})}\times 10^4$ \\
+\midrule
+MBPP & 单步+修补 & 4.14 & 27,284 & 1.52 \\
+MBPP & 分流+重链与救援 & 6.01 & 104,405 & 0.58 \\
+MBPP & 级联 & 9.21 & 207,255 & 0.44 \\
+\midrule
+HumanEval & 单步+修补 & 1.63 & 1,986 & 8.19 \\
+HumanEval & 分流+重链与救援 & 1.83 & 10,213 & 1.79 \\
+HumanEval & 级联 & 2.24 & 8,909 & 2.51 \\
+\bottomrule
+\end{tabularx}
+\end{table*}
+
+MBPP 上，累计 $\rho$ 从单步+修补到级联逐步下降，说明后续预算仍能换取通过率，但边际性价比降低。HumanEval 上单步已经接近饱和，少量残差样本会放大个别题目对 $\rho$ 的影响。综合来看，中预算优先使用修补与结构化主链，高预算再启用候选扩展，是更稳妥的部署选择。

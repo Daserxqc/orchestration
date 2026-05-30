@@ -1,0 +1,33 @@
+\begin{figure}[t]
+\centering
+\input{figures/F0-journal-style}
+\resizebox{0.98\linewidth}{!}{%
+\begin{tikzpicture}[paperfig, node distance=5mm and 7mm]
+  \node[paperdata, text width=31mm] (task) {任务输入\\\scriptsize 题面、签名、测试};
+  \node[papermodel, below=of task, text width=31mm] (single) {单步\\\scriptsize 一次生成};
+  \node[paperproc, below=of single, text width=31mm] (repair) {单步+修补\\\scriptsize 执行反馈修补};
+  \node[paperproc, below=of repair, text width=31mm] (route) {分流+重链与救援\\\scriptsize 结构路由与失败闭环};
+  \node[paperproc, below=of route, text width=31mm] (cascade) {级联\\\scriptsize 候选扩展与筛选};
+  \node[paperout, below=of cascade, text width=31mm] (eval) {统一评测\\\scriptsize pass@1 / calls / tokens};
+
+  \draw[paperline] (task) -- (single);
+  \draw[paperline] (single) -- (repair);
+  \draw[paperline] (repair) -- (route);
+  \draw[paperline] (route) -- (cascade);
+  \draw[paperline] (cascade) -- (eval);
+
+  \node[papernote, right=8mm of repair] (mid) {中预算\\执行反馈};
+  \node[papernote, right=8mm of route] (heavy) {结构预算\\复杂样本};
+  \node[papernote, right=8mm of cascade] (high) {高预算\\候选覆盖};
+  \draw[paperdash] (mid) -- (repair);
+  \draw[paperdash] (heavy) -- (route);
+  \draw[paperdash] (high) -- (cascade);
+
+  \draw[paperdash] (route.west) to[bend left=28]
+    node[papernote, left, text width=18mm] {失败信息\\压缩回注}
+    (repair.west);
+\end{tikzpicture}%
+}
+\caption{预算分档编排整体框架}
+\label{fig:overall_framework}
+\end{figure}

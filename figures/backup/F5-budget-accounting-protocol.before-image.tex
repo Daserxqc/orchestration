@@ -1,0 +1,47 @@
+\begin{figure}[t]
+\centering
+\input{figures/F0-journal-style}
+\resizebox{0.98\linewidth}{!}{%
+\begin{tikzpicture}[paperfig, x=1mm, y=1mm]
+  \node[paperdata, text width=16mm, minimum height=11mm] (task) at (7,38) {任务\\$x_i$};
+  \draw[paperBlueLine, line width=0.45pt, fill=white] (1,42) rectangle (6,46);
+  \draw[paperBlueLine, line width=0.45pt, fill=white] (3,40) rectangle (8,44);
+  \draw[paperBlueLine, line width=0.45pt, fill=paperBlue] (5,38) rectangle (10,42);
+
+  \node[paperstate, text width=17mm, minimum height=11mm] (budget) at (48,38) {预算\\档位 $b$};
+  \draw[paperVioletLine, line width=0.6pt] (42,45) -- (54,45);
+  \foreach \x in {42,46,50,54} \draw[paperVioletLine, line width=0.5pt] (\x,43.8) -- (\x,46.2);
+  \fill[paperVioletLine] (50,45) circle (1.1);
+
+  \node[papermodel, text width=28mm, minimum height=17mm] (orch) at (27.5,25) {编排器\\\scriptsize 按档位解锁动作};
+  \draw[paperAmberLine, line width=0.5pt] (15.5,28.8) -- (39.5,28.8);
+  \foreach \x/\lab in {19.5/生成,27.5/修补,35.5/扩展} {
+    \draw[paperAmberLine, line width=0.45pt, fill=paperAmber!45, rounded corners=1pt]
+      (\x-3,20.7) rectangle (\x+3,24.4);
+    \node[font=\tiny] at (\x,22.6) {\lab};
+  }
+
+  \node[paperproc, text width=27mm, minimum height=15mm] (exec) at (27.5,7) {统一执行器 $E$\\\scriptsize 测试、超时、判定固定};
+  \draw[paperTealLine, line width=0.5pt, rounded corners=1pt] (17,10.1) rectangle (38,13.8);
+  \draw[paperTealLine, line width=0.5pt] (19,12) -- (22,12);
+  \draw[paperTealLine, line width=0.5pt] (24,12) -- (31,12);
+  \draw[paperTealLine, line width=0.5pt] (19,8.6) -- (35,8.6);
+
+  \node[paperout, text width=15mm] (pass) at (6,-10) {判定\\$z_i^{(b)}$};
+  \node[paperout, text width=15mm] (calls) at (27.5,-10) {调用\\$c_i^{(b)}$};
+  \node[paperout, text width=15mm] (tokens) at (49,-10) {令牌\\$t_i^{(b)}$};
+
+  \draw[paperline] (task) -- (orch);
+  \draw[paperline] (budget) -- (orch);
+  \draw[paperline] (orch) -- (exec);
+  \draw[paperline] (exec) -- (pass);
+  \draw[paperline] (exec) -- (calls);
+  \draw[paperline] (exec) -- (tokens);
+
+  \node[papernote, text width=44mm] at (27.5,-22)
+    {同一评测口径下记录收益与成本，比较不同预算形态};
+\end{tikzpicture}%
+}
+\caption{统一预算记账协议}
+\label{fig:budget_accounting_protocol}
+\end{figure}

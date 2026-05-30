@@ -1,0 +1,31 @@
+\begin{figure}[t]
+\centering
+\input{figures/F0-journal-style}
+\resizebox{0.98\linewidth}{!}{%
+\begin{tikzpicture}[paperfig, node distance=7mm and 8mm]
+  \node[paperdata, text width=20mm] (task) {当前任务\\$x_i$};
+  \node[papermodel, right=of task, text width=22mm] (gen) {候选生成\\$y_i^{(1)}$};
+  \node[paperproc, right=of gen, text width=22mm] (exec) {统一执行器\\测试判定};
+  \node[paperproc, below=of exec, text width=22mm] (classify) {失败分类\\错误标签};
+  \node[paperproc, left=of classify, text width=22mm] (compress) {反馈压缩\\$\phi(e_i^{(1)})$};
+  \node[paperproc, left=of compress, text width=20mm] (repair) {修补/替换\\$\tilde{x}_i^{(2)}$};
+  \node[paperout, below=of classify, text width=22mm] (stop) {通过或停止};
+
+  \draw[paperline] (task) -- (gen);
+  \draw[paperline] (gen) -- (exec);
+  \draw[paperline] (exec) -- node[papernote, right] {失败} (classify);
+  \draw[paperline] (exec.east) to[bend left=24]
+    node[papernote, right] {通过} (stop.east);
+  \draw[paperline] (classify) -- node[papernote, right] {预算耗尽} (stop);
+  \draw[paperline] (compress) -- (repair);
+  \draw[paperline] (classify) -- (compress);
+  \draw[paperline] (repair.north) to[bend left=22]
+    node[papernote, left] {下一轮} (gen.south);
+
+  \node[papernote, below=6mm of repair, text width=54mm] (note) {仅回注局部约束，控制上下文膨胀};
+  \draw[paperdash] (compress.south) -- (note.north);
+\end{tikzpicture}%
+}
+\caption{失败反馈救援闭环}
+\label{fig:rescue_loop}
+\end{figure}

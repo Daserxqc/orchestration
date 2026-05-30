@@ -1,0 +1,27 @@
+\begin{figure}[t]
+\centering
+\input{figures/F0-journal-style}
+\resizebox{0.98\linewidth}{!}{%
+\begin{tikzpicture}[paperfig, x=1mm, y=1mm]
+  \node[paperdata, text width=24mm] (task) at (0,32) {任务集合\\$\mathcal{D}=\{x_i\}$};
+  \node[paperstate, text width=21mm] (budget) at (43,32) {预算档位\\$b$};
+  \node[papermodel, text width=30mm] (orch) at (21.5,19) {编排器\\生成候选 $y_i^{(b)}$};
+  \node[paperproc, text width=30mm] (exec) at (21.5,6) {统一执行器 $E$\\二值判定 $z_i^{(b)}$};
+  \node[paperout, text width=20mm] (pass) at (0,-7) {通过率\\$p_b$};
+  \node[paperout, text width=20mm] (calls) at (21.5,-7) {调用次数\\$c_i^{(b)}$};
+  \node[paperout, text width=20mm] (tokens) at (43,-7) {令牌成本\\$t_i^{(b)}$};
+
+  \draw[paperline] (task) -- (orch);
+  \draw[paperline] (budget) -- (orch);
+  \draw[paperline] (orch) -- (exec);
+  \draw[paperline] (exec) -- (pass);
+  \draw[paperline] (exec) -- (calls);
+  \draw[paperline] (exec) -- (tokens);
+
+  \node[papernote, text width=46mm] at (21.5,-17)
+    {同一测试、超时与判定口径下比较收益和成本};
+\end{tikzpicture}%
+}
+\caption{统一预算记账协议}
+\label{fig:budget_accounting_protocol}
+\end{figure}

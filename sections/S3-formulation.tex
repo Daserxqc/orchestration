@@ -1,0 +1,68 @@
+\section{问题定义与协议}
+\label{sec:formulation}
+
+本节给出本文研究对象的形式化定义。本文把测试时计算视为可记账的资源分配问题：在同一代码生成任务集合上，给定一个预算档位，系统决定是否继续调用模型、如何使用执行反馈、是否扩展候选集，并在统一执行器下记录收益与成本。
+
+\subsection{函数级代码生成与统一判定}
+\label{sec:formal-objective}
+
+设函数级代码生成数据集为
+\begin{equation}
+    \mathcal{D}=\{x_i\}_{i=1}^{N},
+\end{equation}
+其中 $x_i$ 包含题面、函数签名以及测试接口。给定预算档位 $b$，编排器生成一个或多个候选程序，最终提交候选 $y_i^{(b)}$ 至执行器 $E$，得到二值判定
+\begin{equation}
+    z_i^{(b)} = E(y_i^{(b)}) \in \{0,1\}.
+\end{equation}
+通过率定义为 $p_b=N^{-1}\sum_i z_i^{(b)}$。除通过率外，本文对每题记录模型调用次数 $c_i^{(b)}$ 与令牌消耗 $t_i^{(b)}$，并汇总得到平均调用次数与总令牌。这里的关键约束是：所有档位共享同一执行器、同一超时与同一测试判定口径，差异仅来自预算档位允许的后续动作。
+
+这一设定把问题从某一提示是否更好，转化为某一预算形态能在相同统计口径下带来多少收益。后文主结论以同协议内的四档结果为核心证据，跨模型结果与细粒度消融用于解释机制来源。
+
+图~\ref{fig:budget_accounting_protocol} 概括了本文的记账口径：预算档位只改变编排器允许采取的动作，判定与成本记录保持统一。
+
+\input{figures/F5-budget-accounting-protocol}
+
+\subsection{预算档位与语义约束}
+\label{sec:tier-protocol}
+
+预算分档协议将测试时编排限制为四个语义清晰的档位。档位越高，解锁的计算投向越丰富：从单次生成，到失败修补，再到难度分流下的重路径，最后到候选扩展与执行筛选。表~\ref{tab:tier_mapping} 给出语义档位与仓库实现模式之间的对应关系。其中第三档在双基准上共用 \texttt{difficulty\_aware\_plus} 实现，命令行预算别名仅作为复现入口，正文仍按语义档位定义；第一档日志别名 \texttt{base\_direct} 与 \texttt{single\_step} 同义。
+
+\begin{table*}[htbp]
+\centering
+\small
+\caption{预算语义档位与实现模式映射}
+\label{tab:tier_mapping}
+\begin{tabularx}{\textwidth}{p{2.6cm} p{3.5cm} X}
+\toprule
+语义档位 & 实现模式 & 允许的主要计算投向 \\
+\midrule
+单步 & \texttt{single\_step} & 单次生成与执行判定；作为最低成本基线 \\
+单步+修补 & \texttt{single\_step\_repair} & 在单次失败后使用执行反馈做有限修补 \\
+分流+重链与救援 & \texttt{difficulty\_aware\_plus} & 依据结构难度进入轻/重路径，重路径启用结构化主链与失败后救援 \\
+级联 & \texttt{workflow\_cascade} & 多候选扩展、执行筛选以及有限精修/融合 \\
+\bottomrule
+\end{tabularx}
+\end{table*}
+
+该映射有两个作用。首先，它统一模式名与预算档位，减少解释歧义；其次，它为成本解释提供统一坐标，使通过率上升和令牌增长能够放在同一成本--收益框架下讨论。
+
+\subsection{成本记账与经验收益率}
+\label{sec:accounting}
+
+真实部署中，调用次数只反映部分成本。一次长上下文修补可能比多次短调用更昂贵，级联阶段的候选组织也会推高令牌消耗。因此，本文以总令牌作为主成本代理，以平均调用次数作为辅助指标。若某档 $b$ 相对前一档 $b-1$ 的通过率增量为 $\Delta p=p_b-p_{b-1}$，额外令牌为 $\Delta t=t_b-t_{b-1}$，则定义经验性边际收益率
+\begin{equation}
+    \rho = \frac{\Delta p}{\Delta t}.
+\end{equation}
+为便于跨档比较，实验节还报告相对单步档的累计收益率
+\begin{equation}
+    \rho_b^{(\mathrm{cum})}=
+    \frac{p_b-p_{\mathrm{single}}}{t_b-t_{\mathrm{single}}}.
+\end{equation}
+这两个量用于解释新增令牌带来的通过率收益，帮助判断不同档位的边际效率。
+
+\subsection{证据层级}
+\label{sec:evidence-levels}
+
+本文按三层组织证据。第一层是双基准四档三随机种子主结果，用于刻画预算分档的整体前沿。第二层是多模型单随机种子扫描，用于观察不同基础模型下的档位形态。第三层是机制消融，包括阈值扫描、流程开关、反馈形态和随机路由对照，用于回答预算主要花在哪里、收益来自哪个模块。
+
+这一组织方式贯穿全文，使主结果、跨模型形态和机制解释各自承担清晰角色。

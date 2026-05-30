@@ -1,0 +1,113 @@
+% Shared color TikZ styles for the paper figures.
+\colorlet{paperBlue}{blue!9!white}
+\colorlet{paperBlueLine}{blue!55!black}
+\colorlet{paperTeal}{teal!10!white}
+\colorlet{paperTealLine}{teal!55!black}
+\colorlet{paperAmber}{orange!15!white}
+\colorlet{paperAmberLine}{orange!60!black}
+\colorlet{paperRose}{red!9!white}
+\colorlet{paperRoseLine}{red!55!black}
+\colorlet{paperViolet}{violet!10!white}
+\colorlet{paperVioletLine}{violet!55!black}
+\colorlet{paperInk}{black!72}
+
+\tikzset{
+  paperfig/.style={
+    font=\small,
+    >=Stealth,
+    line cap=round,
+    line join=round
+  },
+  paperline/.style={
+    -{Stealth[length=2.1mm,width=1.6mm]},
+    line width=0.58pt,
+    draw=paperInk
+  },
+  paperdash/.style={
+    paperline,
+    dashed,
+    draw=black!48
+  },
+  paperbox/.style={
+    draw=black!58,
+    line width=0.58pt,
+    rounded corners=2pt,
+    fill=white,
+    align=center,
+    inner xsep=5pt,
+    inner ysep=5pt,
+    minimum height=8mm
+  },
+  paperdata/.style={
+    paperbox,
+    fill=paperBlue,
+    draw=paperBlueLine
+  },
+  paperproc/.style={
+    paperbox,
+    fill=paperTeal,
+    draw=paperTealLine
+  },
+  papermodel/.style={
+    paperbox,
+    fill=paperAmber,
+    draw=paperAmberLine,
+    line width=0.65pt
+  },
+  paperout/.style={
+    paperbox,
+    fill=paperRose,
+    draw=paperRoseLine,
+    line width=0.65pt,
+    font=\small\bfseries
+  },
+  paperstate/.style={
+    paperbox,
+    fill=paperViolet,
+    draw=paperVioletLine
+  },
+  papernote/.style={
+    font=\scriptsize,
+    align=center,
+    text=black!70,
+    fill=white,
+    inner sep=1.4pt
+  },
+  paperaxis/.style={
+    line width=0.45pt,
+    draw=black!72
+  },
+  papergrid/.style={
+    line width=0.25pt,
+    draw=black!15
+  },
+  paperplot/.style={
+    line width=0.95pt,
+    draw=paperBlueLine
+  },
+  paperplotA/.style={
+    line width=0.95pt,
+    draw=paperBlueLine
+  },
+  paperplotB/.style={
+    line width=0.95pt,
+    draw=paperAmberLine
+  },
+  papermark/.style={
+    circle,
+    draw=paperBlueLine,
+    fill=white,
+    line width=0.55pt,
+    inner sep=1.6pt
+  },
+  papermarkA/.style={
+    papermark,
+    draw=paperBlueLine,
+    fill=paperBlue
+  },
+  papermarkB/.style={
+    papermark,
+    draw=paperAmberLine,
+    fill=paperAmber
+  }
+}
