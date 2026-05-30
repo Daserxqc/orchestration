@@ -1,24 +1,24 @@
 \section{难度子项与权重依据的补充统计}
 
-表~\ref{tab:appendix_weight_evidence} 汇总本文已使用结果文件中的代表性统计，数据来自 MBPP 上的离线路由证据与特征实验报告：一类是子项与结构分档/运行标签的 Spearman 相关，另一类是学习式路由基线在不同特征块上的交叉验证 AUC。该表展示哪些信号更适合作为结构先验，哪些信号对运行失败预测贡献有限。
+表~\ref{tab:appendix_weight_evidence} 汇总本文已使用结果文件中的代表性统计，数据来自 MBPP 上的离线路由证据与特征实验报告：一类是子项与结构分档/运行标签的 Spearman 相关，另一类是学习式路由基线在不同特征块上的交叉验证 AUC。该表用于支撑第~\ref{sec:mechverify} 节关于结构分主要承担预算排序先验、而非运行失败分类器的判断。
 
-\begin{table*}[htbp]
+\begin{table}[H]
 \centering
-\small
+\scriptsize
 \caption{难度子项与权重依据的补充统计}
 \label{tab:appendix_weight_evidence}
-\begin{tabularx}{\textwidth}{p{5.4cm} c c c X}
+\begin{tabularx}{\linewidth}{>{\raggedright\arraybackslash}X c c c}
 \toprule
-统计项 & 指标 & 数值 & $n$ & 解读 \\
+统计项 & 指标 & 数值 & $n$ \\
 \midrule
-$\rho(\texttt{structural\_hard},\texttt{test\_score})$ & Spearman & 0.5696 & 427 & 与结构分档中等正相关，支持测试复杂度在结构先验中的核心地位 \\
-$\rho(\texttt{direct\_fail},\texttt{test\_score})$ & Spearman & -0.0337 & 383 & 与首轮失败相关性接近 0，说明静态子分难以直接预测运行失败 \\
-$\rho(\texttt{direct\_fail},\texttt{boundary\_score})$ & Spearman & 0.0483 & 383 & 方向与量级均弱，单独预测价值有限 \\
-$\rho(\texttt{direct\_fail},\texttt{extent\_score})$ & Spearman & 0.0669 & 383 & 体量项与首轮失败的单变量关联有限 \\
-\texttt{need\_reroute}（v2 五子分） & LR 5-fold AUC & 0.450 $\pm$ 0.103 & 383 & 仅用子分时接近随机 \\
-\texttt{need\_reroute}（扩展静态） & LR 5-fold AUC & 0.520 $\pm$ 0.108 & 383 & 加入扩展静态后略有提升，但总体仍接近弱信号区间 \\
+\makecell[l]{$\rho(\texttt{structural\_hard},$\\$\texttt{test\_score})$} & Spearman & 0.5696 & 427 \\
+\makecell[l]{$\rho(\texttt{direct\_fail},$\\$\texttt{test\_score})$} & Spearman & -0.0337 & 383 \\
+\makecell[l]{$\rho(\texttt{direct\_fail},$\\$\texttt{boundary\_score})$} & Spearman & 0.0483 & 383 \\
+\makecell[l]{$\rho(\texttt{direct\_fail},$\\$\texttt{extent\_score})$} & Spearman & 0.0669 & 383 \\
+\makecell[l]{\texttt{need\_reroute}\\（v2 五子分）} & LR 5-fold AUC & 0.450 $\pm$ 0.103 & 383 \\
+\makecell[l]{\texttt{need\_reroute}\\（扩展静态）} & LR 5-fold AUC & 0.520 $\pm$ 0.108 & 383 \\
 \bottomrule
 \end{tabularx}
-\end{table*}
+\end{table}
 
-该补充表支持本文的方法定位：难度子项用于\textbf{可解释的预算分配先验}；LR 证据说明同一组静态分更适合做预算排序，而非直接充当运行失败分类器。主结论以端到端通过率、调用与令牌前沿为准。
+该补充表支持本文的方法定位：结构难度与测试复杂度的相关系数为 0.5696，说明测试复杂度能够进入结构先验；而首轮失败与各静态子分的相关性接近 0，LR 5 折 AUC 也仅从 0.450 提升到 0.520。由此可见，难度子项更适合作为\textbf{可解释的预算分配先验}，而非直接充当运行失败分类器。主结论仍以端到端通过率、调用与令牌前沿为准。

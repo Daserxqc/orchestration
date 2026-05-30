@@ -27,22 +27,23 @@
 
 预算分档协议将测试时编排限制为四个语义清晰的档位。档位越高，解锁的计算投向越丰富：从单次生成，到失败修补，再到难度分流下的重路径，最后到候选扩展与执行筛选。表~\ref{tab:tier_mapping} 给出语义档位与仓库实现模式之间的对应关系。其中第三档在双基准上共用 \texttt{difficulty\_aware\_plus} 实现，命令行预算别名仅作为复现入口，正文仍按语义档位定义；第一档日志别名 \texttt{base\_direct} 与 \texttt{single\_step} 同义。
 
-\begin{table*}[htbp]
+\begin{table}[H]
 \centering
-\small
+\scriptsize
+\setlength{\tabcolsep}{3pt}
 \caption{预算语义档位与实现模式映射}
 \label{tab:tier_mapping}
-\begin{tabularx}{\textwidth}{p{2.6cm} p{3.5cm} X}
+\begin{tabularx}{\linewidth}{@{}p{1.15cm} p{2.1cm} X@{}}
 \toprule
 语义档位 & 实现模式 & 允许的主要计算投向 \\
 \midrule
 单步 & \texttt{single\_step} & 单次生成与执行判定；作为最低成本基线 \\
-单步+修补 & \texttt{single\_step\_repair} & 在单次失败后使用执行反馈做有限修补 \\
-分流+重链与救援 & \texttt{difficulty\_aware\_plus} & 依据结构难度进入轻/重路径，重路径启用结构化主链与失败后救援 \\
-级联 & \texttt{workflow\_cascade} & 多候选扩展、执行筛选以及有限精修/融合 \\
+单步+修补 & \makecell[l]{\texttt{single\_step}\\\texttt{\_repair}} & 在单次失败后使用执行反馈做有限修补 \\
+\makecell[l]{分流+重链\\与救援} & \makecell[l]{\texttt{difficulty}\\\texttt{\_aware\_plus}} & 依据结构难度进入轻/重路径，重路径启用结构化主链与失败后救援 \\
+级联 & \makecell[l]{\texttt{workflow}\\\texttt{\_cascade}} & 多候选扩展、执行筛选以及有限精修/融合 \\
 \bottomrule
 \end{tabularx}
-\end{table*}
+\end{table}
 
 该映射有两个作用。首先，它统一模式名与预算档位，减少解释歧义；其次，它为成本解释提供统一坐标，使通过率上升和令牌增长能够放在同一成本--收益框架下讨论。
 

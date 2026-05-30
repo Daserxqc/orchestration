@@ -12,6 +12,45 @@
 
 四档的差异可以概括如下。单步档只做一次生成，是最低成本基线；单步+修补档在失败后追加有限修补调用，检验执行反馈的边际价值；分流+重链与救援档先判断样本是否进入重路径，再使用结构化提示、错误压缩与候选救援处理复杂失败；级联档进一步扩展候选集合，并用执行筛选和可选精修组织高预算搜索。
 
+算法~\ref{alg:budget_tier} 给出单个样本上的预算分档编排逻辑。算法只刻画档位间的控制流，结构难度打分、失败反馈压缩与级联候选扩展的具体实现分别在后续小节展开。
+
+\begin{algorithm*}[t]
+\SetAlgoLined
+\small
+\caption{预算分档编排协议}
+\label{alg:budget_tier}
+\KwIn{任务 $x_i$，预算档位 $b$，模型 $p_\theta$，执行器 $E$，结构阈值 $\tau_{\mathrm{eff}}$}
+\KwOut{最终候选 $y_i$，判定 $z_i$，调用次数 $c_i$，令牌消耗 $t_i$}
+\KwWhere{$\textsc{Single}\prec\textsc{Repair}\prec\textsc{Route}\prec\textsc{Cascade}$ defines the budget order}
+$y^\star \leftarrow \mathrm{Generate}(p_\theta, x_i)$\;
+$(z^\star,e^\star) \leftarrow E(y^\star)$; update $c_i,t_i$\tcp*{single-step baseline}
+\If{$z^\star=1$ \textbf{or} $b=\textsc{Single}$}{
+    \Return $(y^\star,z^\star,c_i,t_i)$\;
+}
+\If{$b \succeq \textsc{Repair}$}{
+    $\tilde{x}_i \leftarrow \mathrm{Concat}(x_i,\phi(e^\star))$\tcp*{compressed feedback}
+    $y \leftarrow \mathrm{Generate}(p_\theta,\tilde{x}_i)$; $(z,e)\leftarrow E(y)$; update $c_i,t_i$\;
+    \lIf{$z=1$}{$(y^\star,z^\star,e^\star)\leftarrow(y,z,e)$}
+    \If{$z^\star=1$ \textbf{or} $b=\textsc{Repair}$}{
+        \Return $(y^\star,z^\star,c_i,t_i)$\;
+    }
+}
+$s_i \leftarrow \mathrm{Difficulty}(x_i)$; $r_i\leftarrow\mathbb{I}(s_i\ge\tau_{\mathrm{eff}})$\;
+\If{$r_i=1$}{
+    $(y,z,e)\leftarrow\mathrm{HeavyChain}(x_i,e^\star)$; update $c_i,t_i$\;
+    \lIf{$z=1$}{$(y^\star,z^\star,e^\star)\leftarrow(y,z,e)$}
+}
+\If{$z^\star=0$}{
+    $(y,z,e)\leftarrow\mathrm{Rescue}(x_i,e^\star)$; update $c_i,t_i$\;
+    \lIf{$z=1$}{$(y^\star,z^\star,e^\star)\leftarrow(y,z,e)$}
+}
+\If{$b=\textsc{Cascade}$ \textbf{and} $z^\star=0$}{
+    $\mathcal{Y}\leftarrow\mathrm{ExpandCandidates}(x_i,y^\star,e^\star)$\;
+    $(y^\star,z^\star)\leftarrow\mathrm{SelectByExecutor}(\mathcal{Y},E)$; update $c_i,t_i$\;
+}
+\Return $(y^\star,z^\star,c_i,t_i)$\;
+\end{algorithm*}
+
 \subsection{结构难度路由}
 \label{sec:routing}
 
